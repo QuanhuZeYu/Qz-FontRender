@@ -4,13 +4,19 @@ import club.heiqi.qz_fontrender.fontSystem.CharacterGenFactory;
 import club.heiqi.qz_fontrender.fontSystem.CharacterInfo;
 import club.heiqi.qz_fontrender.fontSystem.CharacterTexturePage;
 import club.heiqi.qz_fontrender.fontSystem.FontManager;
+import com.ibm.icu.text.ArabicShaping;
+import com.ibm.icu.text.ArabicShapingException;
+import com.ibm.icu.text.Bidi;
 import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.settings.GameSettings;
 import net.minecraft.util.ResourceLocation;
+import org.lwjgl.opengl.GL11;
 
 public class ReplaceFontRender extends FontRenderer {
     public static final float DEFAULT_CHAR_WIDTH = 8f;
+    public float curCharWidth = DEFAULT_CHAR_WIDTH;
     public CharacterGenFactory factory;
     public FontManager fontManager;
 
@@ -33,6 +39,80 @@ public class ReplaceFontRender extends FontRenderer {
     //     CharacterInfo characterInfo = page.renderChar(codepoint, color, x, y, 8f, 8f);
     //     return characterInfo.advanceX();
     // }
+
+
+
+    @Override
+    public int drawStringWithShadow(String text, int x, int y, int color) {
+        return drawString(text, x, y, color, true);
+    }
+
+    @Override
+    public int drawString(String text, int x, int y, int color) {
+        return drawString(text, x, y, color, false);
+    }
+
+    @Override
+    public int drawString(String text, int x, int y, int color, boolean dropShadow) {
+        enableAlpha();
+        this.resetStyles();
+        int l;
+
+        if (dropShadow)
+        {
+            l = this.renderString(text, x + 1, y + 1, color, true);
+            l = Math.max(l, this.renderString(text, x, y, color, false));
+        }
+        else
+        {
+            l = this.renderString(text, x, y, color, false);
+        }
+
+        return l;
+    }
+
+    @Override
+    public int getStringWidth(String text) {
+        float width = 0;
+        String[] splits = text.split("(?=§)");
+        for (String split : splits) {
+            // 提取无操作符文字
+            if (split.startsWith("§") && split.length() <= 2) continue;
+            String s = split;
+            if (split.startsWith("§")) s = split.substring(2);
+            // 遍历分割单元内的字符
+            for (int i = 0; i < s.length() - 1;) {
+                int codepoint = text.codePointAt(i);
+                int charCountInCodePoint = Character.charCount(codepoint);
+                i += charCountInCodePoint;
+
+                CharacterTexturePage page = factory.getPageOrGenChar(codepoint);
+                // 如果没找到
+                if (page == null) {
+                    width += 4f;
+                    continue;
+                }
+                CharacterInfo info = page.getInfo(codepoint);
+                width += info.advanceX()/info.width()*this.curCharWidth;
+            }
+        }
+        return (int) width;
+    }
+
+    @Override
+    public int getCharWidth(char character) {
+        String s = String.valueOf(character);
+        int codepoint = s.codePointAt(0);
+        if (s.equals("§")) return -1;
+        if (s.equals(" ")) return (int) (this.curCharWidth/2);
+
+        CharacterTexturePage page = factory.getPageOrGenChar(codepoint);
+        if (page == null) {
+            return (int) (this.curCharWidth/2);
+        }
+        CharacterInfo info = page.getInfo(codepoint);
+        return (int) Math.ceil(info.advanceX()/info.width()*this.curCharWidth);
+    }
 
     /**解析字符串以渲染，主要识别 § `0123456789abcdefklmnor` 17字符+5控制字符?
      * k = 随机化
@@ -102,9 +182,11 @@ public class ReplaceFontRender extends FontRenderer {
             String text = split;
             if (split.startsWith("§")) text = split.substring(2);
             // 遍历字符
-            for (int i = 0; i < text.length(); i++) {
+            for (int i = 0; i < text.length();) {
                 int codepoint = text.codePointAt(i);
                 char[] chars = Character.toChars(codepoint);
+                int charCountInCodePoint = Character.charCount(codepoint);
+                i += charCountInCodePoint;
                 final char trueChar = chars[0];
                 final String trueCharacter = new String(chars);
                 int randomCharIndex = trueChar;
@@ -134,12 +216,13 @@ public class ReplaceFontRender extends FontRenderer {
                 if (page == null) {
                     posX += offset;
                     posY += offset;
-                    posX += 4.0f; // 多一个空格大小表示占位
+                    doDraw(4f);
                     continue;
                 }
                 int color = (((int)(alpha*255)) << 24) | red << 16 | green << 8 | blue;
-                CharacterInfo info = page.renderChar(codepoint, color, posX, posY, 8f, 8f);
-                float charWidth = (info.advanceX() / info.width()) * 8f;
+                CharacterInfo info = page.renderChar(codepoint, color, posX, posY, this.curCharWidth, this.curCharWidth);
+                float charWidth = info.advanceX() / info.width() * this.curCharWidth;
+                if (trueCharacter.equals(" ")) charWidth = this.curCharWidth/2;
 
                 if (shadow) {
                     posX += offset;
@@ -156,7 +239,7 @@ public class ReplaceFontRender extends FontRenderer {
                         posY -= offset;
                     }
 
-                    page.renderChar(codepoint, textColor, posX, posY, 8f, 8f);
+                    page.renderChar(codepoint, textColor, posX, posY, this.curCharWidth, this.curCharWidth);
 
                     if (shadow) {
                         posX += offset;
@@ -169,6 +252,85 @@ public class ReplaceFontRender extends FontRenderer {
                 // 2.2.3 处理下划线等情况
                 doDraw(charWidth);
             }
+        }
+    }
+
+    protected void doDraw(float f) {
+        Tessellator tessellator;
+
+        if (this.strikethroughStyle) {
+            tessellator = Tessellator.instance;
+            GL11.glDisable(GL11.GL_TEXTURE_2D);
+            tessellator.startDrawingQuads();
+            tessellator.addVertex((double)this.posX, (double)(this.posY + (float)(this.FONT_HEIGHT / 2)), 0.0D);
+            tessellator.addVertex((double)(this.posX + f), (double)(this.posY + (float)(this.FONT_HEIGHT / 2)), 0.0D);
+            tessellator.addVertex((double)(this.posX + f), (double)(this.posY + (float)(this.FONT_HEIGHT / 2) - 1.0F), 0.0D);
+            tessellator.addVertex((double)this.posX, (double)(this.posY + (float)(this.FONT_HEIGHT / 2) - 1.0F), 0.0D);
+            tessellator.draw();
+            GL11.glEnable(GL11.GL_TEXTURE_2D);
+        }
+
+        if (this.underlineStyle) {
+            tessellator = Tessellator.instance;
+            GL11.glDisable(GL11.GL_TEXTURE_2D);
+            tessellator.startDrawingQuads();
+            int l = this.underlineStyle ? -1 : 0;
+            tessellator.addVertex((double)(this.posX + (float)l), (double)(this.posY + (float)this.FONT_HEIGHT), 0.0D);
+            tessellator.addVertex((double)(this.posX + f), (double)(this.posY + (float)this.FONT_HEIGHT), 0.0D);
+            tessellator.addVertex((double)(this.posX + f), (double)(this.posY + (float)this.FONT_HEIGHT - 1.0F), 0.0D);
+            tessellator.addVertex((double)(this.posX + (float)l), (double)(this.posY + (float)this.FONT_HEIGHT - 1.0F), 0.0D);
+            tessellator.draw();
+            GL11.glEnable(GL11.GL_TEXTURE_2D);
+        }
+
+        this.posX += (float)((int)f);
+    }
+
+    private void resetStyles() {
+        this.randomStyle = false;
+        this.boldStyle = false;
+        this.italicStyle = false;
+        this.underlineStyle = false;
+        this.strikethroughStyle = false;
+    }
+
+    private int renderString(String text, int x, int y, int color, boolean shadow) {
+        if (text == null) {
+            return 0;
+        }
+        else {
+            if (this.bidiFlag) {
+                text = this.bidiReorder(text);
+            }
+
+            if ((color & 0b1111_1100_0000_0000_0000_0000_0000_0000) == 0) {
+                color |= 0b1111_1111_0000_0000_0000_0000_0000_0000;
+            }
+
+            if (shadow) {
+                color = (color & 0b1111_1100_1111_1100_1111_1100) >> 2 | color & 0b1111_1111_0000_0000_0000_0000_0000_0000;
+            }
+
+            this.red = (float)(color >> 16 & 255) / 255.0F;
+            this.blue = (float)(color >> 8 & 255) / 255.0F;
+            this.green = (float)(color & 255) / 255.0F;
+            this.alpha = (float)(color >> 24 & 255) / 255.0F;
+            setColor(this.red, this.blue, this.green, this.alpha);
+            this.posX = (float)x;
+            this.posY = (float)y;
+            this.renderStringAtPos(text, shadow);
+            return (int)this.posX;
+        }
+    }
+
+    private String bidiReorder(String p_147647_1_) {
+        try {
+            Bidi bidi = new Bidi((new ArabicShaping(8)).shape(p_147647_1_), 127);
+            bidi.setReorderingMode(0);
+            return bidi.writeReordered(2);
+        }
+        catch (ArabicShapingException arabicshapingexception) {
+            return p_147647_1_;
         }
     }
 
