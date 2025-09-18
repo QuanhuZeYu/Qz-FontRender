@@ -32,6 +32,10 @@ public class CharacterTexturePage {
     /**标记是否需要更新GL侧纹理*/
     public boolean needUpload = false;
 
+    /**隔1s才进行一次上传*/
+    public long lastUpload = 0;
+    public long uploadSpace = 1000;
+
     public CharacterTexturePage(int width, int height, int charWidth, int charHeight) {
         this.width = width;
         this.height = height;
@@ -84,6 +88,10 @@ public class CharacterTexturePage {
      * 将BufferedImage上传到OpenGL中
      */
     public void loadTexture() {
+        long upTime = System.currentTimeMillis();
+        if (upTime - lastUpload < uploadSpace) return;
+        else lastUpload = upTime;
+
         int width = image.getWidth();
         int height = image.getHeight();
         int[] pixels = new int[width * height];
@@ -115,6 +123,7 @@ public class CharacterTexturePage {
                 GL11.GL_UNSIGNED_BYTE,
                 buffer
         );
+
         GL30.glGenerateMipmap(GL11.GL_TEXTURE_2D);
 
         // 设置纹理参数
