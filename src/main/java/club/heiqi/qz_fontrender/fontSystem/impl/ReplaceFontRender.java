@@ -7,12 +7,20 @@ import club.heiqi.qz_fontrender.fontSystem.FontManager;
 import com.ibm.icu.text.ArabicShaping;
 import com.ibm.icu.text.ArabicShapingException;
 import com.ibm.icu.text.Bidi;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.texture.TextureManager;
+import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.settings.GameSettings;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 
 public class ReplaceFontRender extends FontRenderer {
     public static final float DEFAULT_CHAR_WIDTH = 8f;
@@ -334,40 +342,215 @@ public class ReplaceFontRender extends FontRenderer {
         }
     }
 
-    // region 私有方法做空
-    // @Override
-    // protected void bindTexture(ResourceLocation location) {
-    //     throw new RuntimeException("DO NOT CALL THIS");
-    // }
-    //
-    // @Override
-    // protected void doDraw(float f) {
-    //     throw new RuntimeException("DO NOT CALL THIS");
-    // }
-    //
-    // @Override
-    // protected void enableAlpha() {
-    //     throw new RuntimeException("DO NOT CALL THIS");
-    // }
-    //
-    // @Override
-    // protected InputStream getResourceInputStream(ResourceLocation location) throws IOException {
-    //     throw new RuntimeException("DO NOT CALL THIS");
-    // }
-    //
-    // @Override
-    // protected float renderDefaultChar(int p_78266_1_, boolean p_78266_2_) {
-    //     throw new RuntimeException("DO NOT CALL THIS");
-    // }
-    //
-    // @Override
-    // protected float renderUnicodeChar(char p_78277_1_, boolean p_78277_2_) {
-    //     throw new RuntimeException("DO NOT CALL THIS");
-    // }
-    //
-    // @Override
-    // protected void setColor(float r, float g, float b, float a) {
-    //     throw new RuntimeException("DO NOT CALL THIS");
-    // }
-    // endregion
+
+
+    @Override
+    protected void bindTexture(ResourceLocation location) {
+        renderEngine.bindTexture(location);
+    }
+
+    @Override
+    public void drawSplitString(String str, int x, int y, int wrapWidth, int textColor) {
+        this.resetStyles();
+        this.textColor = textColor;
+        str = trimStringNewline(str);
+        renderSplitString(str, x, y, wrapWidth, false);
+    }
+
+    @Override
+    protected void enableAlpha() {
+        GL11.glEnable(GL11.GL_ALPHA_TEST);
+    }
+
+    @Override
+    public boolean getBidiFlag() {
+        return this.bidiFlag;
+    }
+
+    @Override
+    protected InputStream getResourceInputStream(ResourceLocation location) throws IOException {
+        return Minecraft.getMinecraft().getResourceManager().getResource(location).getInputStream();
+    }
+
+    @Override
+    public boolean getUnicodeFlag() {
+        return this.unicodeFlag;
+    }
+
+    @Override
+    public List<String> listFormattedStringToWidth(String str, int wrapWidth) {
+        return Arrays.asList(wrapFormattedStringToWidth(str, wrapWidth).split("\n"));
+    }
+
+    @Override
+    public void onResourceManagerReload(IResourceManager p_110549_1_) {
+
+    }
+
+    @Override
+    public void setBidiFlag(boolean p_78275_1_) {
+        this.bidiFlag = p_78275_1_;
+    }
+
+    @Override
+    protected void setColor(float r, float g, float b, float a) {
+        GL11.glColor4f(r, g, b, a);
+    }
+
+    @Override
+    public void setUnicodeFlag(boolean p_78264_1_) {
+        this.unicodeFlag = p_78264_1_;
+    }
+
+    @Override
+    public int splitStringWidth(String text, int wrapWidth) {
+        return this.FONT_HEIGHT * this.listFormattedStringToWidth(text, wrapWidth).size();
+    }
+
+    @Override
+    public String trimStringToWidth(String text, int targetWidth, boolean b) {
+        StringBuilder stringbuilder = new StringBuilder();
+
+        float width = 0;
+        String[] splits = text.split("(?=§)");
+        for (String split : splits) {
+            // 提取无操作符文字
+            if (split.startsWith("§") && split.length() <= 2) continue;
+            String s = split;
+            if (split.startsWith("§")) s = split.substring(2);
+            // 遍历分割单元内的字符
+            for (int i = 0; i < s.length() - 1;) {
+                int codepoint = text.codePointAt(i);
+                char[] chars = Character.toChars(codepoint);
+                String trueCharacter = new String(chars);
+
+                int charCountInCodePoint = Character.charCount(codepoint);
+                i += charCountInCodePoint;
+
+                CharacterTexturePage page = factory.getPageOrGenChar(codepoint);
+                // 如果没找到
+                if (page == null) {
+                    width += 4f;
+                }
+                else {
+                    CharacterInfo info = page.getInfo(codepoint);
+                    width += info.advanceX() / info.width() * this.curCharWidth;
+                }
+
+                if (width > targetWidth) return stringbuilder.toString();
+                if (width == targetWidth) return stringbuilder.toString();
+                if (width < targetWidth) stringbuilder.append(trueCharacter);
+            }
+        }
+
+        return stringbuilder.toString();
+    }
+
+    @Override
+    public String trimStringToWidth(String p_78269_1_, int p_78269_2_) {
+        return this.trimStringToWidth(p_78269_1_, p_78269_2_, false);
+    }
+
+
+
+
+
+
+    private String trimStringNewline(String p_78273_1_) {
+        while (p_78273_1_ != null && p_78273_1_.endsWith("\n")) {
+            p_78273_1_ = p_78273_1_.substring(0, p_78273_1_.length() - 1);
+        }
+        return p_78273_1_;
+    }
+
+    private void renderSplitString(String str, int x, int y, int wrapWidth, boolean addShadow) {
+        List<String> list = this.listFormattedStringToWidth(str, wrapWidth);
+
+        for (Iterator<String> iterator = list.iterator(); iterator.hasNext(); y += this.FONT_HEIGHT) {
+            String s1 = (String)iterator.next();
+            renderStringAligned(s1, x, y, wrapWidth, this.textColor, addShadow);
+        }
+    }
+
+    private int renderStringAligned(String p_78274_1_, int p_78274_2_, int p_78274_3_, int p_78274_4_, int p_78274_5_, boolean p_78274_6_) {
+        if (this.bidiFlag) {
+            int i1 = this.getStringWidth(this.bidiReorder(p_78274_1_));
+            p_78274_2_ = p_78274_2_ + p_78274_4_ - i1;
+        }
+
+        return this.renderString(p_78274_1_, p_78274_2_, p_78274_3_, p_78274_5_, p_78274_6_);
+    }
+
+    private String wrapFormattedStringToWidth(String str, int wrapWidth) {
+        StringBuilder builder = new StringBuilder();
+
+        float width = 0;
+        for (int charIndex = 0; charIndex < str.length();) {
+            int codepoint = str.codePointAt(charIndex);
+            int count = Character.charCount(codepoint);
+            charIndex += count;
+            char[] chars = Character.toChars(codepoint);
+            String s = new String(chars);
+            CharacterTexturePage page = factory.getPageOrGenChar(codepoint);
+            if (page == null) {
+                width += DEFAULT_CHAR_WIDTH/2;
+                if (width >= wrapWidth) builder.append("\n");
+                builder.append(s);
+            }
+            else {
+                CharacterInfo info = page.getInfo(codepoint);
+                width += info.advanceX() / info.width() * DEFAULT_CHAR_WIDTH;
+                if (width >= wrapWidth) builder.append("\n");
+                builder.append(s);
+            }
+        }
+
+        return builder.toString();
+    }
+
+    private int sizeStringToWidth(String text, int wrapWidth) {
+        int charCount = 0;
+        float width = 0;
+        String[] splits = text.split("(?=§)");
+        for (String split : splits) {
+            // 提取无操作符文字
+            if (split.startsWith("§") && split.length() <= 2) continue;
+            String s = split;
+            if (split.startsWith("§")) s = split.substring(2);
+            // 遍历分割单元内的字符
+            for (int i = 0; i < s.length() - 1;) {
+                int codepoint = text.codePointAt(i);
+                int charCountInCodePoint = Character.charCount(codepoint);
+                i += charCountInCodePoint;
+
+                CharacterTexturePage page = factory.getPageOrGenChar(codepoint);
+                // 如果没找到
+                if (page == null) {
+                    width += 4f;
+                }
+                else {
+                    CharacterInfo info = page.getInfo(codepoint);
+                    width += info.advanceX() / info.width() * this.curCharWidth;
+                }
+                charCount++;
+
+                if (width > wrapWidth) return charCount - 1;
+                if (width == wrapWidth) return charCount;
+            }
+        }
+        return charCount;
+    }
+
+    private String getFormatFromString(String text) {
+        StringBuilder builder = new StringBuilder();
+        String[] splits = text.split("(?=§)");
+        for (String split : splits) {
+            // 提取无操作符文字
+            if (split.startsWith("§") && split.length() <= 2) continue;
+            String s = split;
+            if (split.startsWith("§")) s = split.substring(2);
+            builder.append(s);
+        }
+        return builder.toString();
+    }
 }
