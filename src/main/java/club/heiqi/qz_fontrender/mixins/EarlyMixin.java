@@ -18,8 +18,8 @@ public class EarlyMixin implements IEarlyMixinLoader, IFMLLoadingPlugin {
     @Override
     public List<String> getMixins(Set<String> loadedCoreMods) {
         return Arrays.asList(
-                "MixinFontRenderer",
-                "MixinNewFontRenderer01"
+                "MixinNewFontRenderer01",
+                "MixinMinecraft"
         );
     }
 
