@@ -8,6 +8,7 @@ import org.lwjgl.opengl.GL30;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.ImageObserver;
+import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.util.HashMap;
@@ -31,10 +32,6 @@ public class CharacterTexturePage {
     public boolean full = false;
     /**标记是否需要更新GL侧纹理*/
     public boolean needUpload = false;
-
-    /**隔1s才进行一次上传*/
-    public long lastUpload = 0;
-    public long uploadSpace = 1000;
 
     public CharacterTexturePage(int width, int height, int charWidth, int charHeight) {
         this.width = width;
@@ -73,6 +70,33 @@ public class CharacterTexturePage {
 
         // 标记需要更新GL侧的纹理
         needUpload = true;
+        // int width1 = imageAndInfo.image().getWidth();
+        // int height1 = imageAndInfo.image().getHeight();
+        // int[] pixels = new int[width1 * height1];
+        // imageAndInfo.image().getRGB(0,0,width1,height1,pixels,0,width1);
+        // ByteBuffer buffer = BufferUtils.createByteBuffer(width1 * height1 * 4);
+        // for (int y = 0; y < width1; y++) {  // 修改这里：y从0递增到height-1
+        //     for (int x = 0; x < height1; x++) {
+        //         int pixel = pixels[y * width1 + x];  // 直接按原顺序访问
+        //         buffer.put((byte) ((pixel >> 16) & 0xFF)); // R
+        //         buffer.put((byte) ((pixel >> 8) & 0xFF));  // G
+        //         buffer.put((byte) (pixel & 0xFF));         // B
+        //         buffer.put((byte) ((pixel >> 24) & 0xFF)); // A
+        //     }
+        // }
+        // buffer.flip();
+        //
+        // GL11.glBindTexture(GL11.GL_TEXTURE_2D, textureID);
+        // // 上传纹理数据
+        // GL11.glTexSubImage2D(
+        //         GL11.GL_TEXTURE_2D,
+        //         0,
+        //         cx, cy,
+        //         width,height,
+        //         GL11.GL_RGBA,
+        //         GL11.GL_UNSIGNED_BYTE,
+        //         buffer
+        // );
     }
 
     public boolean isCharinPage(int codepoint) {
@@ -88,9 +112,6 @@ public class CharacterTexturePage {
      * 将BufferedImage上传到OpenGL中
      */
     public void loadTexture() {
-        long upTime = System.currentTimeMillis();
-        if (upTime - lastUpload < uploadSpace) return;
-        else lastUpload = upTime;
 
         int width = image.getWidth();
         int height = image.getHeight();
@@ -111,18 +132,33 @@ public class CharacterTexturePage {
         }
         buffer.flip();
 
-        textureID = GL11.glGenTextures();
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D, textureID);
-        // 上传纹理数据
-        GL11.glTexImage2D(
-                GL11.GL_TEXTURE_2D,
-                0,
-                GL11.GL_RGBA8,
-                width, height, 0,
-                GL11.GL_RGBA,
-                GL11.GL_UNSIGNED_BYTE,
-                buffer
-        );
+        if (textureID == 0) {
+            textureID = GL11.glGenTextures();
+            GL11.glBindTexture(GL11.GL_TEXTURE_2D, textureID);
+            // 上传纹理数据
+            GL11.glTexImage2D(
+                    GL11.GL_TEXTURE_2D,
+                    0,
+                    GL11.GL_RGBA8,
+                    width, height, 0,
+                    GL11.GL_RGBA,
+                    GL11.GL_UNSIGNED_BYTE,
+                    buffer
+            );
+        }
+        else {
+            GL11.glBindTexture(GL11.GL_TEXTURE_2D, textureID);
+            // 上传纹理数据
+            GL11.glTexSubImage2D(
+                    GL11.GL_TEXTURE_2D,
+                    0,
+                    0, 0,
+                    width,height,
+                    GL11.GL_RGBA,
+                    GL11.GL_UNSIGNED_BYTE,
+                    buffer
+            );
+        }
 
         GL30.glGenerateMipmap(GL11.GL_TEXTURE_2D);
 
