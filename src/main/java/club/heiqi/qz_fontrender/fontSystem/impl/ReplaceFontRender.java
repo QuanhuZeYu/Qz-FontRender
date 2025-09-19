@@ -35,6 +35,7 @@ public class ReplaceFontRender extends FontRenderer {
         super(gameSettings, location, manager, b);
         fontManager = new FontManager(fontSize);
         factory = new CharacterGenFactory(fontManager, textureWidth, textureHeight, charWidth, charHeight, maintainPool);
+        setUnicodeFlag(true);
     }
 
 
@@ -51,26 +52,25 @@ public class ReplaceFontRender extends FontRenderer {
 
     @Override
     public int drawString(String text, int x, int y, int color, boolean dropShadow) {
-        enableAlpha();
+        this.enableAlpha();
         this.resetStyles();
-        int l;
+        int xPos;
 
-        if (dropShadow)
-        {
-            l = this.renderString(text, x + 1, y + 1, color, true);
-            l = Math.max(l, this.renderString(text, x, y, color, false));
+        if (dropShadow) {
+            xPos = this.renderString(text, x + 1, y + 1, color, true);
+            xPos = Math.max(xPos, this.renderString(text, x, y, color, false));
         }
-        else
-        {
-            l = this.renderString(text, x, y, color, false);
+        else {
+            xPos = this.renderString(text, x, y, color, false);
         }
 
-        return l;
+        return xPos;
     }
 
     @Override
     public int getStringWidth(String text) {
         float width = 0;
+        if (text == null) return 0;
         String[] splits = text.split("(?=§)");
         for (String split : splits) {
             // 提取无操作符文字
@@ -78,7 +78,7 @@ public class ReplaceFontRender extends FontRenderer {
             String s = split;
             if (split.startsWith("§")) s = split.substring(2);
             // 遍历分割单元内的字符
-            for (int i = 0; i < s.length() - 1;) {
+            for (int i = 0; i < s.length();) {
                 int codepoint = text.codePointAt(i);
                 int charCountInCodePoint = Character.charCount(codepoint);
                 i += charCountInCodePoint;
@@ -100,8 +100,7 @@ public class ReplaceFontRender extends FontRenderer {
     public int getCharWidth(char character) {
         String s = String.valueOf(character);
         int codepoint = s.codePointAt(0);
-        if (s.equals("§")) return -1;
-        if (s.equals(" ")) return (int) (this.curCharWidth/2);
+        if (s.equals(" ")) return (int) (this.curCharWidth/4);
 
         CharacterTexturePage page = factory.getPageOrGenChar(codepoint);
         if (page == null) {
@@ -166,13 +165,12 @@ public class ReplaceFontRender extends FontRenderer {
             String s = split;
             if (split.startsWith("§")) s = split.substring(2);
             // 遍历分割单元内的字符
-            for (int i = 0; i < s.length() - 1;) {
+            for (int i = 0; i < s.length();) {
                 int codepoint = text.codePointAt(i);
                 char[] chars = Character.toChars(codepoint);
                 String trueCharacter = new String(chars);
 
                 int charCountInCodePoint = Character.charCount(codepoint);
-                i += charCountInCodePoint;
 
                 CharacterTexturePage page = factory.getPageOrGenChar(codepoint);
                 // 如果没找到
@@ -187,6 +185,8 @@ public class ReplaceFontRender extends FontRenderer {
                 if (width > targetWidth) return stringbuilder.toString();
                 if (width == targetWidth) return stringbuilder.toString();
                 if (width < targetWidth) stringbuilder.append(trueCharacter);
+
+                i += charCountInCodePoint;
             }
         }
 
@@ -251,12 +251,13 @@ public class ReplaceFontRender extends FontRenderer {
                         italicStyle = true;
                     }
                     case 'r' -> {
-                        this.randomStyle = false;
-                        this.boldStyle = false;
-                        this.strikethroughStyle = false;
-                        this.underlineStyle = false;
-                        this.italicStyle = false;
-                        setColor(this.red, this.blue, this.green, this.alpha);
+                        this.resetStyles();
+                        setColor(red / 255f, (green & 255) / 255f, blue / 255f, alpha);
+                    }
+                    // 任何没有见过的操作符都视作重置！
+                    default -> {
+                        resetStyles();
+                        setColor(red / 255f, (green & 255) / 255f, blue / 255f, alpha);
                     }
                 }
             }
@@ -309,7 +310,7 @@ public class ReplaceFontRender extends FontRenderer {
                 int color = (((int)(alpha*255)) << 24) | red << 16 | green << 8 | blue;
                 CharacterInfo info = page.renderChar(codepoint, color, posX, posY, this.curCharWidth, this.curCharWidth);
                 float charWidth = info.advanceX() / info.width() * this.curCharWidth;
-                if (trueCharacter.equals(" ")) charWidth = this.curCharWidth/2;
+                if (trueCharacter.equals(" ")) charWidth = this.curCharWidth/4;
 
                 if (shadow) {
                     posX += offset;
@@ -381,6 +382,20 @@ public class ReplaceFontRender extends FontRenderer {
         this.strikethroughStyle = false;
     }
 
+    private String bidiReorder(String p_147647_1_) {
+        try {
+            Bidi bidi = new Bidi((new ArabicShaping(8)).shape(p_147647_1_), 127);
+            bidi.setReorderingMode(0);
+            return bidi.writeReordered(2);
+        }
+        catch (ArabicShapingException arabicshapingexception) {
+            return p_147647_1_;
+        }
+    }
+
+    /**
+     * 返回当前X坐标位置 即光标位置
+     */
     private int renderString(String text, int x, int y, int color, boolean shadow) {
         if (text == null) {
             return 0;
@@ -410,22 +425,18 @@ public class ReplaceFontRender extends FontRenderer {
         }
     }
 
-    private String bidiReorder(String p_147647_1_) {
-        try {
-            Bidi bidi = new Bidi((new ArabicShaping(8)).shape(p_147647_1_), 127);
-            bidi.setReorderingMode(0);
-            return bidi.writeReordered(2);
-        }
-        catch (ArabicShapingException arabicshapingexception) {
-            return p_147647_1_;
-        }
-    }
+
+
+
+
+
+
 
 
 
     @Override
     protected void bindTexture(ResourceLocation location) {
-        renderEngine.bindTexture(location);
+
     }
 
     @Override
@@ -460,42 +471,41 @@ public class ReplaceFontRender extends FontRenderer {
         List<String> list = this.listFormattedStringToWidth(str, wrapWidth);
 
         for (Iterator<String> iterator = list.iterator(); iterator.hasNext(); y += this.FONT_HEIGHT) {
-            String s1 = (String)iterator.next();
+            String s1 = iterator.next();
             renderStringAligned(s1, x, y, wrapWidth, this.textColor, addShadow);
         }
     }
 
-    private int renderStringAligned(String p_78274_1_, int p_78274_2_, int p_78274_3_, int p_78274_4_, int p_78274_5_, boolean p_78274_6_) {
+    private void renderStringAligned(String s, int x, int y, int wrapWidth, int color, boolean shadow) {
         if (this.bidiFlag) {
-            int i1 = this.getStringWidth(this.bidiReorder(p_78274_1_));
-            p_78274_2_ = p_78274_2_ + p_78274_4_ - i1;
+            int i1 = this.getStringWidth(this.bidiReorder(s));
+            x = x + wrapWidth - i1;
         }
 
-        return this.renderString(p_78274_1_, p_78274_2_, p_78274_3_, p_78274_5_, p_78274_6_);
+        this.renderString(s, x, y, color, shadow);
     }
 
     private String wrapFormattedStringToWidth(String str, int wrapWidth) {
+        str = getFormatFromString(str);
         StringBuilder builder = new StringBuilder();
 
         float width = 0;
-        for (int charIndex = 0; charIndex < str.length();) {
-            int codepoint = str.codePointAt(charIndex);
+        for (int i = 0; i < str.length();) {
+            int codepoint = str.codePointAt(i);
             int count = Character.charCount(codepoint);
-            charIndex += count;
             char[] chars = Character.toChars(codepoint);
             String s = new String(chars);
             CharacterTexturePage page = factory.getPageOrGenChar(codepoint);
             if (page == null) {
                 width += DEFAULT_CHAR_WIDTH/2;
-                if (width >= wrapWidth) builder.append("\n");
-                builder.append(s);
             }
             else {
                 CharacterInfo info = page.getInfo(codepoint);
                 width += info.advanceX() / info.width() * DEFAULT_CHAR_WIDTH;
-                if (width >= wrapWidth) builder.append("\n");
-                builder.append(s);
             }
+            if (width >= wrapWidth) builder.append("\n");
+            builder.append(s);
+            i += count;
         }
 
         return builder.toString();
