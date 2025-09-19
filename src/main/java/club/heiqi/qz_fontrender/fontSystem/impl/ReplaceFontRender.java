@@ -37,17 +37,6 @@ public class ReplaceFontRender extends FontRenderer {
         factory = new CharacterGenFactory(fontManager, textureWidth, textureHeight, charWidth, charHeight, maintainPool);
     }
 
-    /**渲染指定颜色的对应字符*/
-    // public float renderCharAtPos(int codepoint, int color, char style, float x, float y) {
-    //     // 1. 找到对应字符的纹理页
-    //     CharacterTexturePage page = factory.getPage(codepoint, fontManager.findSuitable(codepoint));
-    //     if (page == null) return DEFAULT_CHAR_WIDTH;  // page=null 表示字符仍在生成中
-    //
-    //     // 2. 使用纹理页渲染字符
-    //     CharacterInfo characterInfo = page.renderChar(codepoint, color, x, y, 8f, 8f);
-    //     return characterInfo.advanceX();
-    // }
-
 
 
     @Override
@@ -121,6 +110,94 @@ public class ReplaceFontRender extends FontRenderer {
         CharacterInfo info = page.getInfo(codepoint);
         return (int) Math.ceil(info.advanceX()/info.width()*this.curCharWidth);
     }
+
+    @Override
+    public boolean getUnicodeFlag() {
+        return this.unicodeFlag;
+    }
+
+    @Override
+    public void drawSplitString(String str, int x, int y, int wrapWidth, int textColor) {
+        this.resetStyles();
+        this.textColor = textColor;
+        str = trimStringNewline(str);
+        renderSplitString(str, x, y, wrapWidth, false);
+    }
+
+    @Override
+    public boolean getBidiFlag() {
+        return this.bidiFlag;
+    }
+
+    @Override
+    public List<String> listFormattedStringToWidth(String str, int wrapWidth) {
+        return Arrays.asList(wrapFormattedStringToWidth(str, wrapWidth).split("\n"));
+    }
+
+    @Override
+    public void onResourceManagerReload(IResourceManager p_110549_1_) {
+
+    }
+
+    @Override
+    public void setBidiFlag(boolean bidiFlag) {
+        this.bidiFlag = bidiFlag;
+    }
+
+    @Override
+    public void setUnicodeFlag(boolean unicodeFlag) {
+        this.unicodeFlag = unicodeFlag;
+    }
+
+    @Override
+    public int splitStringWidth(String text, int wrapWidth) {
+        return this.FONT_HEIGHT * this.listFormattedStringToWidth(text, wrapWidth).size();
+    }
+
+    @Override
+    public String trimStringToWidth(String text, int targetWidth, boolean b) {
+        StringBuilder stringbuilder = new StringBuilder();
+
+        float width = 0;
+        String[] splits = text.split("(?=§)");
+        for (String split : splits) {
+            // 提取无操作符文字
+            if (split.startsWith("§") && split.length() <= 2) continue;
+            String s = split;
+            if (split.startsWith("§")) s = split.substring(2);
+            // 遍历分割单元内的字符
+            for (int i = 0; i < s.length() - 1;) {
+                int codepoint = text.codePointAt(i);
+                char[] chars = Character.toChars(codepoint);
+                String trueCharacter = new String(chars);
+
+                int charCountInCodePoint = Character.charCount(codepoint);
+                i += charCountInCodePoint;
+
+                CharacterTexturePage page = factory.getPageOrGenChar(codepoint);
+                // 如果没找到
+                if (page == null) {
+                    width += 4f;
+                }
+                else {
+                    CharacterInfo info = page.getInfo(codepoint);
+                    width += info.advanceX() / info.width() * this.curCharWidth;
+                }
+
+                if (width > targetWidth) return stringbuilder.toString();
+                if (width == targetWidth) return stringbuilder.toString();
+                if (width < targetWidth) stringbuilder.append(trueCharacter);
+            }
+        }
+
+        return stringbuilder.toString();
+    }
+
+    @Override
+    public String trimStringToWidth(String p_78269_1_, int p_78269_2_) {
+        return this.trimStringToWidth(p_78269_1_, p_78269_2_, false);
+    }
+
 
     /**解析字符串以渲染，主要识别 § `0123456789abcdefklmnor` 17字符+5控制字符?
      * k = 随机化
@@ -350,21 +427,8 @@ public class ReplaceFontRender extends FontRenderer {
     }
 
     @Override
-    public void drawSplitString(String str, int x, int y, int wrapWidth, int textColor) {
-        this.resetStyles();
-        this.textColor = textColor;
-        str = trimStringNewline(str);
-        renderSplitString(str, x, y, wrapWidth, false);
-    }
-
-    @Override
     protected void enableAlpha() {
         GL11.glEnable(GL11.GL_ALPHA_TEST);
-    }
-
-    @Override
-    public boolean getBidiFlag() {
-        return this.bidiFlag;
     }
 
     @Override
@@ -372,83 +436,10 @@ public class ReplaceFontRender extends FontRenderer {
         return Minecraft.getMinecraft().getResourceManager().getResource(location).getInputStream();
     }
 
-    @Override
-    public boolean getUnicodeFlag() {
-        return this.unicodeFlag;
-    }
-
-    @Override
-    public List<String> listFormattedStringToWidth(String str, int wrapWidth) {
-        return Arrays.asList(wrapFormattedStringToWidth(str, wrapWidth).split("\n"));
-    }
-
-    @Override
-    public void onResourceManagerReload(IResourceManager p_110549_1_) {
-
-    }
-
-    @Override
-    public void setBidiFlag(boolean p_78275_1_) {
-        this.bidiFlag = p_78275_1_;
-    }
 
     @Override
     protected void setColor(float r, float g, float b, float a) {
         GL11.glColor4f(r, g, b, a);
-    }
-
-    @Override
-    public void setUnicodeFlag(boolean p_78264_1_) {
-        this.unicodeFlag = p_78264_1_;
-    }
-
-    @Override
-    public int splitStringWidth(String text, int wrapWidth) {
-        return this.FONT_HEIGHT * this.listFormattedStringToWidth(text, wrapWidth).size();
-    }
-
-    @Override
-    public String trimStringToWidth(String text, int targetWidth, boolean b) {
-        StringBuilder stringbuilder = new StringBuilder();
-
-        float width = 0;
-        String[] splits = text.split("(?=§)");
-        for (String split : splits) {
-            // 提取无操作符文字
-            if (split.startsWith("§") && split.length() <= 2) continue;
-            String s = split;
-            if (split.startsWith("§")) s = split.substring(2);
-            // 遍历分割单元内的字符
-            for (int i = 0; i < s.length() - 1;) {
-                int codepoint = text.codePointAt(i);
-                char[] chars = Character.toChars(codepoint);
-                String trueCharacter = new String(chars);
-
-                int charCountInCodePoint = Character.charCount(codepoint);
-                i += charCountInCodePoint;
-
-                CharacterTexturePage page = factory.getPageOrGenChar(codepoint);
-                // 如果没找到
-                if (page == null) {
-                    width += 4f;
-                }
-                else {
-                    CharacterInfo info = page.getInfo(codepoint);
-                    width += info.advanceX() / info.width() * this.curCharWidth;
-                }
-
-                if (width > targetWidth) return stringbuilder.toString();
-                if (width == targetWidth) return stringbuilder.toString();
-                if (width < targetWidth) stringbuilder.append(trueCharacter);
-            }
-        }
-
-        return stringbuilder.toString();
-    }
-
-    @Override
-    public String trimStringToWidth(String p_78269_1_, int p_78269_2_) {
-        return this.trimStringToWidth(p_78269_1_, p_78269_2_, false);
     }
 
 
