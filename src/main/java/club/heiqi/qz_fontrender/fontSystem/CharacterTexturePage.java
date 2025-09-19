@@ -204,4 +204,8 @@ public class CharacterTexturePage {
 
         return info;
     }
+
+    public void dispose() {
+        GL11.glDeleteTextures(textureID);
+    }
 }

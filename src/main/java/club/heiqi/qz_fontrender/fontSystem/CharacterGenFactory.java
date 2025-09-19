@@ -121,6 +121,16 @@ public class CharacterGenFactory {
         inGenerate.remove(codepoint);
     }
 
+    public void reset() {
+        fontManager.reload();
+        for (PageOperator operator : pageOperators) {
+            operator.page.dispose();
+        }
+        pageOperators.clear();
+        highWay.cleanUp();
+        inGenerate.clear();
+    }
+
 
     /**
      * 页面操作者

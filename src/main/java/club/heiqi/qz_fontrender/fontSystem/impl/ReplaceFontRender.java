@@ -135,7 +135,7 @@ public class ReplaceFontRender extends FontRenderer {
 
     @Override
     public void onResourceManagerReload(IResourceManager p_110549_1_) {
-
+        factory.reset();
     }
 
     @Override
