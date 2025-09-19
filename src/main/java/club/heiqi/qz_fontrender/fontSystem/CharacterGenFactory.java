@@ -18,7 +18,7 @@ public class CharacterGenFactory {
     /**所有page*/
     public final ArrayList<PageOperator> pageOperators = new ArrayList<>();
     /**高速缓存的字符*/
-    public final Cache<Integer, CharacterTexturePage> highWay = CacheBuilder.newBuilder().maximumSize(10240).build();
+    public Cache<Integer, CharacterTexturePage> highWay = CacheBuilder.newBuilder().maximumSize(10240).build();
     /**正在生成的字符*/
     public final ConcurrentLinkedQueue<Integer> inGenerate = new ConcurrentLinkedQueue<>();
     /**页面大小*/
@@ -82,12 +82,13 @@ public class CharacterGenFactory {
         // 1. 先访问高速缓存
         CharacterTexturePage page;
         if ((page = highWay.getIfPresent(codepoint)) != null) {
+            if (!page.isCharInPage(codepoint)) throw new RuntimeException("高速缓存的问题");
             return page;
         }
 
         // 2. 高速缓存不存在则遍历所有纹理集
         for (PageOperator operator : pageOperators) {
-            if (operator.page.isCharinPage(codepoint)) {
+            if (operator.page.isCharInPage(codepoint)) {
                 // 缓存一次
                 highWay.put(codepoint, operator.page);
                 return operator.page;
@@ -127,7 +128,7 @@ public class CharacterGenFactory {
             operator.page.dispose();
         }
         pageOperators.clear();
-        highWay.cleanUp();
+        highWay = CacheBuilder.newBuilder().maximumSize(10240).build();
         inGenerate.clear();
     }
 

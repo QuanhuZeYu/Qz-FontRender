@@ -25,6 +25,7 @@ import java.util.List;
 public class ReplaceFontRender extends FontRenderer {
     public static final float DEFAULT_CHAR_WIDTH = 8f;
     public float curCharWidth = DEFAULT_CHAR_WIDTH;
+    public float saveR, saveG, saveB, saveA;
     public CharacterGenFactory factory;
     public FontManager fontManager;
 
@@ -233,7 +234,7 @@ public class ReplaceFontRender extends FontRenderer {
                         red = (color >> 16) & 255;
                         green = (color >> 8) & 255;
                         blue = color & 255;
-                        setColor(red / 255f, (green & 255) / 255f, blue / 255f, alpha);
+                        setColor(red / 255f, green / 255f, blue / 255f, alpha);
                     }
                     case 'k' -> {
                         randomStyle = true;
@@ -252,12 +253,12 @@ public class ReplaceFontRender extends FontRenderer {
                     }
                     case 'r' -> {
                         this.resetStyles();
-                        setColor(red / 255f, (green & 255) / 255f, blue / 255f, alpha);
+                        red = (int) (saveR * 255); green = (int) (saveG * 255); blue = (int) (saveB * 255);
                     }
                     // 任何没有见过的操作符都视作重置！
                     default -> {
-                        resetStyles();
-                        setColor(red / 255f, (green & 255) / 255f, blue / 255f, alpha);
+                        this.resetStyles();
+                        red = (int) (saveR * 255); green = (int) (saveG * 255); blue = (int) (saveB * 255);
                     }
                 }
             }
@@ -289,7 +290,7 @@ public class ReplaceFontRender extends FontRenderer {
                 }
 
                 // 2.2.1 处理unicode和阴影的位置偏移
-                float offset = unicodeFlag ? 0.5f : 1.0f;
+                float offset = 0.5f;
 
                 // ========== 渲染 ==========
                 if (shadow) {
@@ -413,10 +414,10 @@ public class ReplaceFontRender extends FontRenderer {
                 color = (color & 0b1111_1100_1111_1100_1111_1100) >> 2 | color & 0b1111_1111_0000_0000_0000_0000_0000_0000;
             }
 
-            this.red = (float)(color >> 16 & 255) / 255.0F;
-            this.blue = (float)(color >> 8 & 255) / 255.0F;
-            this.green = (float)(color & 255) / 255.0F;
-            this.alpha = (float)(color >> 24 & 255) / 255.0F;
+            this.alpha = (float)(color >> 24 & 255) / 255.0F;   saveA = this.alpha;
+            this.red = (float)(color >> 16 & 255) / 255.0F;     saveR = this.red;
+            this.blue = (float)(color >> 8 & 255) / 255.0F;     saveG = this.blue;
+            this.green = (float)(color & 255) / 255.0F;         saveB = this.green;
             setColor(this.red, this.blue, this.green, this.alpha);
             this.posX = (float)x;
             this.posY = (float)y;

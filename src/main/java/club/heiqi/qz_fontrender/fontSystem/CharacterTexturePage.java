@@ -8,7 +8,6 @@ import org.lwjgl.opengl.GL30;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.ImageObserver;
-import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.util.HashMap;
@@ -99,7 +98,7 @@ public class CharacterTexturePage {
         // );
     }
 
-    public boolean isCharinPage(int codepoint) {
+    public boolean isCharInPage(int codepoint) {
         CharacterInfo info = storage.get(codepoint);
         return info != null;
     }
