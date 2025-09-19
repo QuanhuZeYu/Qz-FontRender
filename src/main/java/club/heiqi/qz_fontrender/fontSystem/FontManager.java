@@ -10,12 +10,8 @@ import java.io.*;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.LinkedHashSet;
-import java.util.Objects;
+import java.nio.file.*;
+import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -47,68 +43,68 @@ public class FontManager {
     public void initFontAssets() {
         File fontDir = new File(System.getProperty("user.dir"), "fonts");
 
-        // 确保目标目录存在
-        if (!fontDir.exists() && !fontDir.mkdirs()) {
-            System.err.println("无法创建字体目录: " + fontDir);
-            return;
-        }
+        List<String> jarList = Arrays.asList(
+                "fonts/LXGWWenKai-Light.ttf",
+                "fonts/LXGWWenKai-Medium.ttf",
+                "fonts/LXGWWenKai-Regular.ttf",
+                "fonts/LXGWWenKaiMono-Light.ttf",
+                "fonts/LXGWWenKaiMono-Medium.ttf",
+                "fonts/LXGWWenKaiMono-Regular.ttf",
+                "fonts/segoeui.ttf",
+                "fonts/segoeuib.ttf",
+                "fonts/segoeuii.ttf",
+                "fonts/segoeuil.ttf",
+                "fonts/segoeuisl.ttf",
+                "fonts/segoeuiz.ttf",
+                "fonts/seguibl.ttf",
+                "fonts/seguibli.ttf",
+                "fonts/seguiemj.ttf",
+                "fonts/seguihis.ttf",
+                "fonts/seguili.ttf",
+                "fonts/seguisb.ttf",
+                "fonts/seguisbi.ttf",
+                "fonts/seguisli.ttf",
+                "fonts/seguisym.ttf",
+                "fonts/SegUIVar.ttf"
+        );
+        for (String jarFile : jarList) {
+            File saveFile = new File(fontDir, jarFile.split("/")[1]);
 
-        // 检查目录是否为空
-        File[] existingFiles = fontDir.listFiles(File::isFile);
-        if (existingFiles != null && existingFiles.length > 0) {
-            return; // 目录非空，无需操作
+            try {
+                moveFileFromJar(jarFile, saveFile.getAbsolutePath());
+            } catch (IOException e) {
+                LOG.error(e);
+            }
         }
+    }
 
-        // 从 JAR 资源复制字体
-        try {
-            URL resourceUrl = getClass().getResource("/fonts");
-            if (resourceUrl == null) {
-                System.err.println("JAR 中未找到字体资源");
-                return;
+    public void moveFileFromJar(String jarInternalPath, String targetPath) throws IOException {
+        // 确保路径格式正确
+        String internalPath = jarInternalPath.startsWith("/") ? jarInternalPath : "/" + jarInternalPath;
+
+        try (InputStream inputStream = this.getClass().getResourceAsStream(internalPath)) {
+            if (inputStream == null) {
+                throw new IOException("文件未找到于Jar内: " + internalPath);
             }
 
-            // 处理 JAR 内的资源文件
-            if ("jar".equals(resourceUrl.getProtocol())) {
-                String jarPath = resourceUrl.getPath().split("!")[0].replace("file:", "");
-                try (JarFile jar = new JarFile(URLDecoder.decode(jarPath, "UTF-8"))) {
-                    Enumeration<JarEntry> entries = jar.entries();
-                    while (entries.hasMoreElements()) {
-                        JarEntry entry = entries.nextElement();
-                        String name = entry.getName();
+            Path target = Paths.get(targetPath);
 
-                        if (name.startsWith("fonts/") && !entry.isDirectory()) {
-                            String fileName = name.substring(name.lastIndexOf('/') + 1);
-                            File destFile = new File(fontDir, fileName);
+            // 创建目标目录（如果不存在）
+            Files.createDirectories(target.getParent());
 
-                            // 使用兼容 Java 8 的流复制方式
-                            try (InputStream in = jar.getInputStream(entry);
-                                 OutputStream out = new FileOutputStream(destFile)) {
-
-                                byte[] buffer = new byte[1024];
-                                int bytesRead;
-                                while ((bytesRead = in.read(buffer)) != -1) {
-                                    out.write(buffer, 0, bytesRead);
-                                }
-                                System.out.println("复制字体: " + fileName);
-                            }
-                        }
-                    }
+            // 复制文件内容
+            try (OutputStream outputStream = Files.newOutputStream(target,
+                    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+                byte[] buffer = new byte[8192];
+                int bytesRead;
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, bytesRead);
                 }
             }
-            // 处理 IDE 环境中的资源
-            else if ("file".equals(resourceUrl.getProtocol())) {
-                File sourceDir = new File(resourceUrl.toURI());
-                for (File srcFile : Objects.requireNonNull(sourceDir.listFiles())) {
-                    if (srcFile.isFile()) {
-                        File destFile = new File(fontDir, srcFile.getName());
-                        Files.copy(srcFile.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("字体复制失败: " + e.getMessage());
-            e.printStackTrace();
         }
+
+        // 注意：无法从运行的Jar中删除源文件，这实际上是一个复制操作
+        // 如果需要真正移动（删除原文件），需要特殊处理Jar文件本身
     }
 
     /**
