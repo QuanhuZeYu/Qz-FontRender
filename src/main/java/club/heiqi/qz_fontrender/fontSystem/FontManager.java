@@ -118,7 +118,8 @@ public class FontManager {
 
         File[] fontFiles = fontDir.listFiles((dir, name) ->
                 name.toLowerCase().endsWith(".ttf") ||
-                name.toLowerCase().endsWith(".otf"));
+                name.toLowerCase().endsWith(".otf") ||
+                name.toLowerCase().endsWith(".ttc"));
 
         if (fontFiles != null) {
             loadTTF(fontFiles);
