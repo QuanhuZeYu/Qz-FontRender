@@ -299,8 +299,10 @@ public class ReplaceFontRender extends FontRenderer {
                 CharacterTexturePage page = factory.getPageOrGenChar(codepoint);
                 // 如果没有找到则跳过 并还原坐标
                 if (page == null) {
-                    posX += offset;
-                    posY += offset;
+                    if (shadow) {
+                        posX += offset;
+                        posY += offset;
+                    }
                     doDraw(4f);
                     continue;
                 }
