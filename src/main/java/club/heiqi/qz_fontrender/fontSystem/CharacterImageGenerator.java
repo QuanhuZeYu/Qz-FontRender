@@ -67,7 +67,7 @@ public class CharacterImageGenerator {
             double boundsX = logicalBounds.getX();
             double boundsY = logicalBounds.getY();
 
-            if ((bounds2DWidth > width || bounds2DHeight > height) && font.getSize2D() >= fontSize/2) {
+            if ((bounds2DWidth > width || bounds2DHeight > height)) {
                 font = font.deriveFont(font.getSize2D() - .5f);
                 retry = true;
             }
