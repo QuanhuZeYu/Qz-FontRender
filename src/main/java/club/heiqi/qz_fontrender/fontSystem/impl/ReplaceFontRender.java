@@ -95,6 +95,29 @@ public class ReplaceFontRender extends FontRenderer {
                 CharacterInfo info = page.getInfo(codepoint);
                 width += info.advanceX()/info.width() * this.curCharWidth + Config.characterSpacing;
             }
+        } */
+        for (int i = 0; i < text.length();) {
+            int codepoint = text.codePointAt(i);
+            char[] chars = Character.toChars(codepoint);
+            int charCount = Character.charCount(codepoint);
+            String s = new String(chars);
+
+            // 跳过操作符
+            if (s.equals("§")) {
+                i += 2;
+                continue;
+            }
+
+            CharacterTexturePage page = factory.getPageOrGenChar(codepoint);
+            if (page == null) {
+                width += Config.spaceWidth;
+            }
+            else {
+                CharacterInfo info = page.getInfo(codepoint);
+                width += info.advanceX()/info.width() * this.curCharWidth + Config.characterSpacing;
+            }
+
+            i += charCount;
         }
         return (int) Math.ceil(width);
     }
