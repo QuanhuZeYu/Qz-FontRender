@@ -342,10 +342,10 @@ public class ReplaceFontRender extends FontRenderer {
             tessellator = Tessellator.instance;
             GL11.glDisable(GL11.GL_TEXTURE_2D);
             tessellator.startDrawingQuads();
-            tessellator.addVertex((double)this.posX, (double)(this.posY + (float)(this.FONT_HEIGHT / 2)), 0.0D);
-            tessellator.addVertex((double)(this.posX + f), (double)(this.posY + (float)(this.FONT_HEIGHT / 2)), 0.0D);
-            tessellator.addVertex((double)(this.posX + f), (double)(this.posY + (float)(this.FONT_HEIGHT / 2) - 1.0F), 0.0D);
-            tessellator.addVertex((double)this.posX, (double)(this.posY + (float)(this.FONT_HEIGHT / 2) - 1.0F), 0.0D);
+            tessellator.addVertex((double)this.posX, (double)(this.posY + (float)((this.curCharWidth + Config.lineSpacing) / 2)), 0.0D);
+            tessellator.addVertex((double)(this.posX + f), (double)(this.posY + (float)((this.curCharWidth + Config.lineSpacing) / 2)), 0.0D);
+            tessellator.addVertex((double)(this.posX + f), (double)(this.posY + (float)((this.curCharWidth + Config.lineSpacing) / 2) - 1.0F), 0.0D);
+            tessellator.addVertex((double)this.posX, (double)(this.posY + (float)((this.curCharWidth + Config.lineSpacing) / 2) - 1.0F), 0.0D);
             tessellator.draw();
             GL11.glEnable(GL11.GL_TEXTURE_2D);
         }
@@ -355,10 +355,10 @@ public class ReplaceFontRender extends FontRenderer {
             GL11.glDisable(GL11.GL_TEXTURE_2D);
             tessellator.startDrawingQuads();
             int l = this.underlineStyle ? -1 : 0;
-            tessellator.addVertex((double)(this.posX + (float)l), (double)(this.posY + (float)this.FONT_HEIGHT), 0.0D);
-            tessellator.addVertex((double)(this.posX + f), (double)(this.posY + (float)this.FONT_HEIGHT), 0.0D);
-            tessellator.addVertex((double)(this.posX + f), (double)(this.posY + (float)this.FONT_HEIGHT - 1.0F), 0.0D);
-            tessellator.addVertex((double)(this.posX + (float)l), (double)(this.posY + (float)this.FONT_HEIGHT - 1.0F), 0.0D);
+            tessellator.addVertex((double)(this.posX + (float)l), (double)(this.posY + (float)(this.curCharWidth + Config.lineSpacing)), 0.0D);
+            tessellator.addVertex((double)(this.posX + f), (double)(this.posY + (float)(this.curCharWidth + Config.lineSpacing)), 0.0D);
+            tessellator.addVertex((double)(this.posX + f), (double)(this.posY + (float)(this.curCharWidth + Config.lineSpacing) - 1.0F), 0.0D);
+            tessellator.addVertex((double)(this.posX + (float)l), (double)(this.posY + (float)(this.curCharWidth + Config.lineSpacing) - 1.0F), 0.0D);
             tessellator.draw();
             GL11.glEnable(GL11.GL_TEXTURE_2D);
         }
@@ -466,7 +466,7 @@ public class ReplaceFontRender extends FontRenderer {
     private void renderSplitString(String str, int x, int y, int wrapWidth, boolean addShadow) {
         List<String> list = this.listFormattedStringToWidth(str, wrapWidth);
 
-        for (Iterator<String> iterator = list.iterator(); iterator.hasNext(); y += this.FONT_HEIGHT) {
+        for (Iterator<String> iterator = list.iterator(); iterator.hasNext(); y += (this.curCharWidth + Config.lineSpacing)) {
             String s1 = iterator.next();
             renderStringAligned(s1, x, y, wrapWidth, this.textColor, addShadow);
         }
