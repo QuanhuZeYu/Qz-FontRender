@@ -82,7 +82,7 @@ public class CharacterGenFactory {
         // 1. 先访问高速缓存
         CharacterTexturePage page;
         if ((page = highWay.getIfPresent(codepoint)) != null) {
-            if (!page.isCharInPage(codepoint)) throw new RuntimeException("高速缓存的问题");
+            if (!page.isCharInPage(codepoint)) return null;
             return page;
         }
 
