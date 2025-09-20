@@ -17,6 +17,7 @@ public class Config {
     public static float spaceWidth = ReplaceFontRender.DEFAULT_CHAR_WIDTH/2f;
     public static float shadowOffsetX = 0.5f;
     public static float shadowOffsetY = 0.5f;
+    public static float charSize = 8.5f;
 
     public void init(File configFile) {
         if (config == null) {
@@ -31,6 +32,7 @@ public class Config {
         spaceWidth = config.getFloat("spaceWidth", Configuration.CATEGORY_GENERAL, ReplaceFontRender.DEFAULT_CHAR_WIDTH/2f, Float.MIN_VALUE, Float.MAX_VALUE, "空格宽度");
         shadowOffsetX = config.getFloat("shadowOffsetX", Configuration.CATEGORY_GENERAL, -0.5f, -Float.MAX_VALUE, Float.MAX_VALUE, "投影位置偏移X");
         shadowOffsetY = config.getFloat("shadowOffsetY", Configuration.CATEGORY_GENERAL, -0.5f, -Float.MAX_VALUE, Float.MAX_VALUE, "投影位置偏移Y");
+        charSize = config.getFloat("charSize", Configuration.CATEGORY_GENERAL, 8.5f, -Float.MAX_VALUE, Float.MAX_VALUE, "字体大小");
 
         if (config.hasChanged()) {
             config.save();

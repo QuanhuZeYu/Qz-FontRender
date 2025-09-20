@@ -24,7 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 
 public class ReplaceFontRender extends FontRenderer {
-    public static final float DEFAULT_CHAR_WIDTH = 8f;
+    public static final float DEFAULT_CHAR_WIDTH = 9f;
     public float curCharWidth = DEFAULT_CHAR_WIDTH;
     public float saveR, saveG, saveB, saveA;
     public CharacterGenFactory factory;
@@ -40,6 +40,7 @@ public class ReplaceFontRender extends FontRenderer {
         setUnicodeFlag(true);
     }
 
+    public void setCharSize(float size) {curCharWidth = size;}
 
 
     @Override
@@ -73,7 +74,7 @@ public class ReplaceFontRender extends FontRenderer {
     public int getStringWidth(String text) {
         float width = 0;
         if (text == null) return 0;
-        String[] splits = text.split("(?=§)");
+        /* String[] splits = text.split("(?=§)");
         for (String split : splits) {
             // 提取无操作符文字
             if (split.startsWith("§") && split.length() <= 2) continue;
@@ -209,6 +210,7 @@ public class ReplaceFontRender extends FontRenderer {
      * o = 斜体
      * r = 重置*/
     private void renderStringAtPos(String s, boolean shadow) {
+        this.curCharWidth = Config.charSize;
         // 1. 以§做分割
         String[] splits = s.split("(?=§)");
         String randomSample = "ÀÁÂÈÊËÍÓÔÕÚßãõğİıŒœŞşŴŵžȇ\u0000\u0000\u0000\u0000\u0000\u0000\u0000 " +
