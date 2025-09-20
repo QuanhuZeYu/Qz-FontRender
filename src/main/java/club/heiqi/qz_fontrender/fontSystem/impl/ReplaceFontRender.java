@@ -92,10 +92,10 @@ public class ReplaceFontRender extends FontRenderer {
                     continue;
                 }
                 CharacterInfo info = page.getInfo(codepoint);
-                width += info.advanceX()/info.width()*this.curCharWidth + Config.characterSpacing;
+                width += info.advanceX()/info.width() * this.curCharWidth + Config.characterSpacing;
             }
         }
-        return (int) width;
+        return (int) Math.ceil(width);
     }
 
     @Override
@@ -152,7 +152,7 @@ public class ReplaceFontRender extends FontRenderer {
 
     @Override
     public int splitStringWidth(String text, int wrapWidth) {
-        return this.FONT_HEIGHT * this.listFormattedStringToWidth(text, wrapWidth).size();
+        return (int) Math.ceil(DEFAULT_CHAR_WIDTH * this.listFormattedStringToWidth(text, wrapWidth).size());
     }
 
     @Override
@@ -457,24 +457,45 @@ public class ReplaceFontRender extends FontRenderer {
     }
 
     private String wrapFormattedStringToWidth(String str, int wrapWidth) {
-        str = getFormatFromString(str);
         StringBuilder builder = new StringBuilder();
 
         float width = 0;
         for (int i = 0; i < str.length();) {
+            // 获取字符信息
             int codepoint = str.codePointAt(i);
             int count = Character.charCount(codepoint);
             char[] chars = Character.toChars(codepoint);
             String s = new String(chars);
+
+            // 跳过操作符和对应的char
+            if (s.equals("§")) {
+                i ++;
+                builder.append(s);
+                if (i < str.length()) {
+                    // 获取字符信息
+                    codepoint = str.codePointAt(i);
+                    count = Character.charCount(codepoint);
+                    chars = Character.toChars(codepoint);
+                    s = new String(chars);
+                    builder.append(s);
+                    i++;
+                }
+                continue;
+            }
+
             CharacterTexturePage page = factory.getPageOrGenChar(codepoint);
+
             if (page == null) {
                 width += Config.spaceWidth;
             }
             else {
                 CharacterInfo info = page.getInfo(codepoint);
-                width += info.advanceX() / info.width() * DEFAULT_CHAR_WIDTH + Config.characterSpacing;
+                width += info.advanceX() / info.width() * this.curCharWidth + Config.characterSpacing;
             }
-            if (width >= wrapWidth) builder.append("\n");
+            if (width > wrapWidth) {
+                builder.append("\n");
+                width = 0;
+            }
             builder.append(s);
             i += count;
         }
