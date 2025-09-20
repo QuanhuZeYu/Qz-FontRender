@@ -10,11 +10,17 @@ import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
 
-@Mod(modid = MyMod.MODID, version = Tags.VERSION, name = "MyMod", acceptedMinecraftVersions = "[1.7.10]")
+@Mod(
+        modid = MyMod.MODID,
+        version = Tags.VERSION,
+        name = MyMod.MOD_NAME,
+        acceptedMinecraftVersions = "[1.7.10]",
+        guiFactory = "club.heiqi.qz_fontrender.configGUI.ConfigGUIFactory")
 public class MyMod {
 
     public static final String MODID = "qz_fontrender";
     public static final Logger LOG = LogManager.getLogger(MODID);
+    public static final String MOD_NAME = "Qz-FontRender";
 
     @SidedProxy(clientSide = "club.heiqi.qz_fontrender.ClientProxy", serverSide = "club.heiqi.qz_fontrender.CommonProxy")
     public static CommonProxy proxy;
