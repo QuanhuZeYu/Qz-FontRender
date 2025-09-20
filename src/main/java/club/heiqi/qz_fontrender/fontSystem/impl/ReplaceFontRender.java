@@ -59,7 +59,7 @@ public class ReplaceFontRender extends FontRenderer {
         int xPos;
 
         if (dropShadow) {
-            xPos = this.renderString(text, x + 1, y + 1, color, true);
+            xPos = this.renderString(text, x, y, color, true);
             xPos = Math.max(xPos, this.renderString(text, x, y, color, false));
         }
         else {
@@ -291,18 +291,10 @@ public class ReplaceFontRender extends FontRenderer {
                 }
 
                 // ========== 渲染 ==========
-                if (shadow) {
-                    posX -= Config.shadowOffsetX;
-                    posY -= Config.shadowOffsetY;
-                }
 
                 CharacterTexturePage page = factory.getPageOrGenChar(codepoint);
                 // 如果没有找到则跳过 并还原坐标
                 if (page == null) {
-                    if (shadow) {
-                        posX += Config.shadowOffsetX;
-                        posY += Config.shadowOffsetY;
-                    }
                     doDraw(Config.spaceWidth);
                     continue;
                 }
@@ -310,11 +302,6 @@ public class ReplaceFontRender extends FontRenderer {
                 CharacterInfo info = page.renderChar(codepoint, color, posX, posY, this.curCharWidth, this.curCharWidth);
                 float charWidth = info.advanceX() / info.width() * this.curCharWidth + Config.characterSpacing;
                 if (trueCharacter.equals(" ")) charWidth = Config.spaceWidth;
-
-                if (shadow) {
-                    posX += Config.shadowOffsetX;
-                    posY += Config.shadowOffsetY;
-                }
                 // ========== 渲染 ==========
 
                 // 2.2.3 处理下划线等情况
@@ -377,6 +364,8 @@ public class ReplaceFontRender extends FontRenderer {
      * 返回当前X坐标位置 即光标位置
      */
     private int renderString(String text, int x, int y, int color, boolean shadow) {
+        float fx = x;
+        float fy = y;
         if (text == null) {
             return 0;
         }
@@ -391,6 +380,8 @@ public class ReplaceFontRender extends FontRenderer {
 
             if (shadow) {
                 color = (color & 0b1111_1100_1111_1100_1111_1100) >> 2 | color & 0b1111_1111_0000_0000_0000_0000_0000_0000;
+                fx += Config.shadowOffsetX;
+                fy += Config.shadowOffsetY;
             }
 
             this.alpha = (float)(color >> 24 & 255) / 255.0F;   saveA = this.alpha;
@@ -398,8 +389,8 @@ public class ReplaceFontRender extends FontRenderer {
             this.blue = (float)(color >> 8 & 255) / 255.0F;     saveG = this.blue;
             this.green = (float)(color & 255) / 255.0F;         saveB = this.green;
             setColor(this.red, this.blue, this.green, this.alpha);
-            this.posX = (float)x;
-            this.posY = (float)y;
+            this.posX = fx;
+            this.posY = fy;
             this.renderStringAtPos(text, shadow);
             return (int)this.posX;
         }
