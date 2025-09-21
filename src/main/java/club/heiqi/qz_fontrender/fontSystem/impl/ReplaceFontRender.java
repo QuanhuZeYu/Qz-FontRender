@@ -240,7 +240,9 @@ public class ReplaceFontRender extends FontRenderer {
      * o = 斜体
      * r = 重置*/
     private void renderStringAtPos(String s, boolean shadow) {
+        prepareChars();
         loadRandomSampleWidth();
+
         this.curCharWidth = Config.charSize;
         // 1. 以§做分割
         String[] splits = s.split("(?=§)");
