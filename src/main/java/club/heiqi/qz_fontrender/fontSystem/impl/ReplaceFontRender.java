@@ -1,10 +1,8 @@
 package club.heiqi.qz_fontrender.fontSystem.impl;
 
 import club.heiqi.qz_fontrender.Config;
-import club.heiqi.qz_fontrender.fontSystem.CharacterGenFactory;
-import club.heiqi.qz_fontrender.fontSystem.CharacterInfo;
-import club.heiqi.qz_fontrender.fontSystem.CharacterTexturePage;
-import club.heiqi.qz_fontrender.fontSystem.FontManager;
+import club.heiqi.qz_fontrender.MyMod;
+import club.heiqi.qz_fontrender.fontSystem.*;
 import com.ibm.icu.text.ArabicShaping;
 import com.ibm.icu.text.ArabicShapingException;
 import com.ibm.icu.text.Bidi;
@@ -108,7 +106,7 @@ public class ReplaceFontRender extends FontRenderer {
                 continue;
             }
 
-            CharacterTexturePage page = factory.getPageOrGenChar(codepoint);
+            CharacterTexturePage page = factory.getPageOrGenChar(codepoint, 0);
             if (page == null) {
                 width += Config.spaceWidth;
             }
@@ -128,7 +126,7 @@ public class ReplaceFontRender extends FontRenderer {
         int codepoint = s.codePointAt(0);
         if (s.equals(" ")) return (int) Config.spaceWidth;
 
-        CharacterTexturePage page = factory.getPageOrGenChar(codepoint);
+        CharacterTexturePage page = factory.getPageOrGenChar(codepoint, 0);
         if (page == null) {
             return (int) Config.spaceWidth;
         }
@@ -198,7 +196,7 @@ public class ReplaceFontRender extends FontRenderer {
 
                 int charCountInCodePoint = Character.charCount(codepoint);
 
-                CharacterTexturePage page = factory.getPageOrGenChar(codepoint);
+                CharacterTexturePage page = factory.getPageOrGenChar(codepoint, EnumFontType.NORMAL);
                 // 如果没找到
                 if (page == null) {
                     width += Config.spaceWidth;
@@ -225,6 +223,11 @@ public class ReplaceFontRender extends FontRenderer {
     }
 
 
+    public static final String randomSample = "ÀÁÂÈÊËÍÓÔÕÚßãõğİıŒœŞşŴŵžȇ!\"#$%&'()*+,-./0123456789:;<=>?" +
+            "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~" +
+            "ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜø£Ø×ƒáíóúñÑªº¿®¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀" +
+            "αβΓπΣσμτΦΘΩδ∞∅∈∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■";
+    public static float[] randomSampleWidthList;
     /**解析字符串以渲染，主要识别 § `0123456789abcdefklmnor` 17字符+5控制字符?
      * k = 随机化
      * l = 粗体
@@ -233,16 +236,15 @@ public class ReplaceFontRender extends FontRenderer {
      * o = 斜体
      * r = 重置*/
     private void renderStringAtPos(String s, boolean shadow) {
+        loadRandomSampleWidth();
         this.curCharWidth = Config.charSize;
         // 1. 以§做分割
         String[] splits = s.split("(?=§)");
-        String randomSample = "ÀÁÂÈÊËÍÓÔÕÚßãõğİıŒœŞşŴŵžȇ\u0000\u0000\u0000\u0000\u0000\u0000\u0000 " +
-                "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\u0000" +
-                "ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜø£Ø×ƒáíóúñÑªº¿®¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀" +
-                "αβΓπΣσμτΦΘΩδ∞∅∈∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■\u0000";
+
 
         // 2. 操作分割后的单元
-        int red = (int) (this.red * 255), green = (int) (this.blue * 255), blue = (int) (this.green * 255);
+        int red = (int) (this.red * 255), green = (int) (this.blue * 255), blue = (int) (this.green * 255),
+            fontType = EnumFontType.NORMAL;
         for (String split : splits) {
             // 2.1 先检查单元中是否有操作符
             if (split.startsWith("§") && split.length() >= 2) {
@@ -267,6 +269,7 @@ public class ReplaceFontRender extends FontRenderer {
                     }
                     case 'l' -> {
                         boldStyle = true;
+                        fontType = EnumFontType.BOLD;
                     }
                     case 'm' -> {
                         strikethroughStyle = true;
@@ -300,32 +303,42 @@ public class ReplaceFontRender extends FontRenderer {
                 char[] chars = Character.toChars(codepoint);
                 int charCountInCodePoint = Character.charCount(codepoint);
                 i += charCountInCodePoint;
-                final char trueChar = chars[0];
                 final String trueCharacter = new String(chars);
-                int randomCharIndex = trueChar;
 
-                // 处理随机化字符
-                if (randomStyle) {
-                    int indexOf = randomSample.indexOf(trueChar);
-                    do {
-                        randomCharIndex = fontRandom.nextInt(charWidth.length);
-                    }
-                    while (charWidth[indexOf] != charWidth[randomCharIndex]);
-
-                    randomCharIndex = indexOf;
-                }
-
-                // ========== 渲染 ==========
-
-                CharacterTexturePage page = factory.getPageOrGenChar(codepoint);
-                // 如果没有找到则跳过 并还原坐标
+                CharacterTexturePage page = factory.getPageOrGenChar(codepoint, fontType);
+                // 如果没有找到则跳过
                 if (page == null) {
                     doDraw(Config.spaceWidth);
                     continue;
                 }
+                CharacterInfo info = page.getInfo(codepoint);
+                float charAdvance = info.advanceX();
+                float charWidth = charAdvance / info.width() * this.curCharWidth + Config.characterSpacing;
+
+                // 处理随机化字符
+                if (randomStyle && loaded) {
+                    float randomWidth = 0;
+                    int randomCharCodepoint;
+                    do {
+                        int randomIndex = fontRandom.nextInt(randomSample.length());
+                        randomCharCodepoint = randomSample.charAt(randomIndex);
+                        randomWidth = randomSampleWidthList[randomIndex];
+                    }
+                    while (Math.abs(charAdvance - randomWidth) > 0.05f);
+
+                    page = factory.getPageOrGenChar(randomCharCodepoint, EnumFontType.NORMAL);
+                    // 如果没有找到则跳过
+                    if (page == null) {
+                        doDraw(Config.spaceWidth);
+                        continue;
+                    }
+                    info = page.getInfo(randomCharCodepoint);
+                    MyMod.LOG.debug("");
+                }
+
+                // ========== 渲染 ==========
                 int color = (((int)(alpha*255)) << 24) | red << 16 | green << 8 | blue;
-                CharacterInfo info = page.renderChar(codepoint, color, posX, posY, this.curCharWidth, this.curCharWidth);
-                float charWidth = info.advanceX() / info.width() * this.curCharWidth + Config.characterSpacing;
+                page.renderChar(info, color, posX, posY, this.curCharWidth, this.curCharWidth, this.italicStyle);
                 if (trueCharacter.equals(" ")) charWidth = Config.spaceWidth;
                 // ========== 渲染 ==========
 
@@ -340,10 +353,22 @@ public class ReplaceFontRender extends FontRenderer {
             GL11.glDisable(GL11.GL_TEXTURE_2D);
             GL11.glBegin(GL11.GL_QUADS);
 
-            GL11.glVertex3d((this.posX), (this.posY + (this.curCharWidth)), 0.0d);
-            GL11.glVertex3d((this.posX + width), (this.posY + (this.curCharWidth)), 0.0d);
-            GL11.glVertex3d((this.posX + width), (this.posY + (this.curCharWidth) - 1.0d), 0.0d);
-            GL11.glVertex3d((this.posX), (this.posY + (this.curCharWidth) - 1.0d), 0.0d);
+            GL11.glVertex3d((this.posX), (this.posY + this.curCharWidth), 0.0d);
+            GL11.glVertex3d((this.posX + width), (this.posY + this.curCharWidth), 0.0d);
+            GL11.glVertex3d((this.posX + width), (this.posY + this.curCharWidth - 1.0d), 0.0d);
+            GL11.glVertex3d((this.posX), (this.posY + this.curCharWidth - 1.0d), 0.0d);
+
+            GL11.glEnd();
+            GL11.glEnable(GL11.GL_TEXTURE_2D);
+        }
+        if (this.strikethroughStyle) {
+            GL11.glDisable(GL11.GL_TEXTURE_2D);
+            GL11.glBegin(GL11.GL_QUADS);
+
+            GL11.glVertex3d((this.posX), this.posY + (this.curCharWidth / 2) + 1, 0.0d);
+            GL11.glVertex3d((this.posX + width), this.posY + (this.curCharWidth / 2) + 1, 0.0d);
+            GL11.glVertex3d((this.posX + width), this.posY + (this.curCharWidth / 2), 0.0d);
+            GL11.glVertex3d((this.posX), this.posY + (this.curCharWidth / 2), 0.0d);
 
             GL11.glEnd();
             GL11.glEnable(GL11.GL_TEXTURE_2D);
@@ -464,9 +489,9 @@ public class ReplaceFontRender extends FontRenderer {
     private void renderSplitString(String str, int x, int y, int wrapWidth, boolean addShadow) {
         List<String> list = this.listFormattedStringToWidth(str, wrapWidth);
 
-        for (Iterator<String> iterator = list.iterator(); iterator.hasNext(); y += (this.curCharWidth + Config.lineSpacing)) {
-            String s1 = iterator.next();
+        for (String s1 : list) {
             renderStringAligned(s1, x, y, wrapWidth, this.textColor, addShadow);
+            y += (int) Math.ceil(this.curCharWidth + Config.lineSpacing);
         }
     }
 
@@ -506,7 +531,7 @@ public class ReplaceFontRender extends FontRenderer {
                 continue;
             }
 
-            CharacterTexturePage page = factory.getPageOrGenChar(codepoint);
+            CharacterTexturePage page = factory.getPageOrGenChar(codepoint, 0);
 
             if (page == null) {
                 width += Config.spaceWidth;
@@ -524,6 +549,36 @@ public class ReplaceFontRender extends FontRenderer {
         }
 
         return builder.toString();
+    }
+
+    private boolean loaded = false;
+    private void loadRandomSampleWidth() {
+        if (loaded) return;
+
+        if (randomSampleWidthList == null) {
+            for (int i = 0; i < randomSample.length(); i++) {
+                int codepoint = randomSample.codePointAt(i);
+                factory.getPageOrGenChar(codepoint, EnumFontType.NORMAL);
+            }
+            randomSampleWidthList = new float[randomSample.length()];
+            return;
+        }
+
+        for (int i = 0; i < randomSample.length(); i++) {
+            int codepoint = randomSample.codePointAt(i);
+            CharacterTexturePage page = factory.getPageOrGenChar(codepoint, EnumFontType.NORMAL);
+            if (page == null) return;
+        }
+
+        for (int i = 0; i < randomSample.length(); i++) {
+            int codepoint = randomSample.codePointAt(i);
+            CharacterTexturePage page = factory.getPageOrGenChar(codepoint, EnumFontType.NORMAL);
+            if (page == null) return;
+            CharacterInfo info = page.getInfo(codepoint);
+            randomSampleWidthList[i] = info.advanceX();
+        }
+
+        loaded = true;
     }
 
     // private int sizeStringToWidth(String text, int wrapWidth) {

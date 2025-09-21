@@ -28,9 +28,21 @@ public class FontManager {
         loadInstalledFontsTTF();
     }
 
-    public Font findSuitable(int codepoint) {
+    public Font findSuitable(int codepoint, int type) {
         for (Font font : fonts) {
-            if (font.canDisplay(codepoint)) return font;
+            if (type == EnumFontType.NORMAL && (font.isPlain() && !font.getName().toLowerCase().contains("bold")) && font.canDisplay(codepoint)) {
+                return font;
+            }
+            if (type == EnumFontType.BOLD && (font.isBold() || font.getName().toLowerCase().contains("bold")) && font.canDisplay(codepoint)) {
+                return font;
+            }
+        }
+
+        // 兜底显示
+        for (Font font : fonts) {
+            if (font.canDisplay(codepoint)) {
+                return font;
+            }
         }
         return get(0);
     }

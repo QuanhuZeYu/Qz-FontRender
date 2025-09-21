@@ -204,6 +204,37 @@ public class CharacterTexturePage {
         return info;
     }
 
+    public void renderChar(CharacterInfo info, int color, float x, float y, float width, float height, boolean italic) {
+        if (needUpload) loadTexture();
+
+        double u0 = info.getU0(this.width);
+        double u1 = info.getU1(this.width);
+        double v0 = info.getV0(this.height);
+        double v1 = info.getV1(this.height);
+
+        GL11.glBindTexture(GL11.GL_TEXTURE_2D, textureID);
+        FloatBuffer floatBuffer = BufferUtils.createFloatBuffer(4);
+        GL11.glGetFloat(GL11.GL_CURRENT_COLOR, floatBuffer);
+        float alpha = ((color >> 24) & 255) / 255f;
+        float red = ((color >> 16) & 255) / 255f;
+        float green = ((color >> 8) & 255) / 255f;
+        float blue = (color & 255) / 255f;
+        GL11.glColor4f(red, green, blue, alpha);
+
+        GL11.glBegin(GL11.GL_QUADS);
+        GL11.glTexCoord2d(u0, v0);
+        GL11.glVertex3f(italic ? x+2 : x, y, 0);
+        GL11.glTexCoord2d(u0, v1);
+        GL11.glVertex3f(x, y+height, 0);
+        GL11.glTexCoord2d(u1, v1);
+        GL11.glVertex3f(x+width, y+height, 0);
+        GL11.glTexCoord2d(u1, v0);
+        GL11.glVertex3f(italic ? x+width+2 : x+width, y, 0);
+        GL11.glEnd();
+
+        GL11.glColor4f(floatBuffer.get(0), floatBuffer.get(1), floatBuffer.get(2), floatBuffer.get(3));
+    }
+
     public void dispose() {
         GL11.glDeleteTextures(textureID);
     }

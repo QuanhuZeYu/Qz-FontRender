@@ -16,11 +16,14 @@ public class CharacterGenFactory {
     /**缓存字体管理器*/
     public final FontManager fontManager;
     /**所有page*/
-    public final ArrayList<PageOperator> pageOperators = new ArrayList<>();
+    public final ArrayList<PageOperator> normalPage = new ArrayList<>(),
+                                         boldPage = new ArrayList<>();
     /**高速缓存的字符*/
-    public Cache<Integer, CharacterTexturePage> highWay = CacheBuilder.newBuilder().maximumSize(10240).build();
+    public Cache<Integer, CharacterTexturePage> normalHighWay = CacheBuilder.newBuilder().maximumSize(10240).build(),
+                                                boldHighWay = CacheBuilder.newBuilder().maximumSize(10240).build();
     /**正在生成的字符*/
-    public final ConcurrentLinkedQueue<Integer> inGenerate = new ConcurrentLinkedQueue<>();
+    public final ConcurrentLinkedQueue<Integer> normalInGenerate = new ConcurrentLinkedQueue<>(),
+                                                boldInGenerate = new ConcurrentLinkedQueue<>();
     /**页面大小*/
     public final int width, height;
     /**字符大小*/
@@ -28,7 +31,8 @@ public class CharacterGenFactory {
     /**维持可用池化数量*/
     public final int maintainPool;
     /**工厂线程锁 保证添加字符时的安全性*/
-    public ReentrantLock addCharLock = new ReentrantLock();
+    public ReentrantLock normalLock = new ReentrantLock(),
+                         boldLock = new ReentrantLock();
 
     /**
      * @param width,height          纹理页大小
@@ -52,84 +56,165 @@ public class CharacterGenFactory {
     /**检查所有page始终保持有5个未满page*/
     public void checkPool() {
         // 1. 检查数量是否有5个不足直接添加
-        if (pageOperators.size() < maintainPool) {
-            int addCount = maintainPool - pageOperators.size();
+        if (normalPage.size() < maintainPool) {
+            int addCount = maintainPool - normalPage.size();
             for (int i = 0; i < addCount; i++) {
-                pageOperators.add(new PageOperator(new CharacterTexturePage(width, height, charWidth, charHeight), this));
+                normalPage.add(new PageOperator(new CharacterTexturePage(width, height, charWidth, charHeight), this));
+            }
+            return;
+        }
+        if (boldPage.size() < maintainPool) {
+            int addCount = maintainPool - boldPage.size();
+            for (int i = 0; i < addCount; i++) {
+                boldPage.add(new PageOperator(new CharacterTexturePage(width, height, charWidth, charHeight), this));
             }
             return;
         }
 
         // 2. 检查未满数量
         int under = 0;
-        int operateCount = pageOperators.size();
-        for (PageOperator pageOperator : pageOperators) {
+        for (PageOperator pageOperator : normalPage) {
             if (!pageOperator.isFull()) under++;
         }
         if (under < maintainPool) {
             int addCount = maintainPool - under;
             for (int i = 0; i < addCount; i++) {
-                pageOperators.add(new PageOperator(new CharacterTexturePage(width, height, charWidth, charHeight), this));
+                normalPage.add(new PageOperator(new CharacterTexturePage(width, height, charWidth, charHeight), this));
+            }
+            return;
+        }
+        for (PageOperator pageOperator : boldPage) {
+            if (!pageOperator.isFull()) under++;
+        }
+        if (under < maintainPool) {
+            int addCount = maintainPool - under;
+            for (int i = 0; i < addCount; i++) {
+                boldPage.add(new PageOperator(new CharacterTexturePage(width, height, charWidth, charHeight), this));
             }
             return;
         }
     }
 
+    /**
+     * @param codepoint     码点
+     * @param type          0-常规 1-粗体 2-斜体
+     */
     @Nullable
-    public CharacterTexturePage getPageOrGenChar(int codepoint) {
-        if (inGenerate.contains(codepoint)) return null;  // 正在生成
+    public CharacterTexturePage getPageOrGenChar(int codepoint, int type) {
+        switch (type) {
+            case 1 -> {
+                if (boldInGenerate.contains(codepoint)) return null;  // 正在生成
 
-        // 1. 先访问高速缓存
-        CharacterTexturePage page;
-        if ((page = highWay.getIfPresent(codepoint)) != null) {
-            if (!page.isCharInPage(codepoint)) return null;
-            return page;
-        }
+                // 1. 先访问高速缓存
+                CharacterTexturePage page;
+                if ((page = boldHighWay.getIfPresent(codepoint)) != null) {
+                    if (!page.isCharInPage(codepoint)) return null;
+                    return page;
+                }
 
-        // 2. 高速缓存不存在则遍历所有纹理集
-        for (PageOperator operator : pageOperators) {
-            if (operator.page.isCharInPage(codepoint)) {
-                // 缓存一次
-                highWay.put(codepoint, operator.page);
-                return operator.page;
+                // 2. 高速缓存不存在则遍历所有纹理集
+                for (PageOperator operator : boldPage) {
+                    if (operator.page.isCharInPage(codepoint)) {
+                        // 缓存一次
+                        boldHighWay.put(codepoint, operator.page);
+                        return operator.page;
+                    }
+                }
+
+                // 执行到这代表没有找到对应的Page
+                addCharacter(codepoint, 1);
+                return null;
+            }
+            default -> {
+                if (normalInGenerate.contains(codepoint)) return null;  // 正在生成
+
+                // 1. 先访问高速缓存
+                CharacterTexturePage page;
+                if ((page = normalHighWay.getIfPresent(codepoint)) != null) {
+                    if (!page.isCharInPage(codepoint)) return null;
+                    return page;
+                }
+
+                // 2. 高速缓存不存在则遍历所有纹理集
+                for (PageOperator operator : normalPage) {
+                    if (operator.page.isCharInPage(codepoint)) {
+                        // 缓存一次
+                        normalHighWay.put(codepoint, operator.page);
+                        return operator.page;
+                    }
+                }
+
+                // 执行到这代表没有找到对应的Page
+                addCharacter(codepoint, 0);
+                return null;
             }
         }
-
-        // 执行到这代表没有找到对应的Page
-        addCharacter(codepoint);
-        return null;
     }
 
-    public boolean addCharacter(int codepoint) {
-        addCharLock.lock();
-        try {
-            checkPool();
-            for (PageOperator operator : pageOperators) {
-                // 寻找可添加的纹理页进行添加操作
-                if (operator.canAdd()) {
-                    inGenerate.add(codepoint);
-                    operator.addCharacter(codepoint, fontManager.findSuitable(codepoint));
-                    return true;
+    public boolean addCharacter(int codepoint, int type) {
+        switch (type) {
+            case EnumFontType.BOLD -> {
+                boldLock.lock();
+                try {
+                    checkPool();
+                    for (PageOperator operator : boldPage) {
+                        // 寻找可添加的纹理页进行添加操作
+                        if (operator.canAdd()) {
+                            boldInGenerate.add(codepoint);
+                            operator.addCharacter(codepoint, fontManager.findSuitable(codepoint, type), type);
+                            return true;
+                        }
+                    }
+                    return false;
+                } finally {
+                    boldLock.unlock();
                 }
             }
-            return false;
-        } finally {
-            addCharLock.unlock();
+            default -> {
+                normalLock.lock();
+                try {
+                    checkPool();
+                    for (PageOperator operator : normalPage) {
+                        // 寻找可添加的纹理页进行添加操作
+                        if (operator.canAdd()) {
+                            normalInGenerate.add(codepoint);
+                            operator.addCharacter(codepoint, fontManager.findSuitable(codepoint, EnumFontType.NORMAL), EnumFontType.NORMAL);
+                            return true;
+                        }
+                    }
+                    return false;
+                } finally {
+                    normalLock.unlock();
+                }
+            }
         }
     }
 
-    public void generateDone(int codepoint) {
-        inGenerate.remove(codepoint);
+    public void generateDone(int codepoint, int type) {
+        switch (type) {
+            case EnumFontType.BOLD -> {
+                boldInGenerate.remove(codepoint);
+            }
+            default -> {
+                normalInGenerate.remove(codepoint);
+            }
+        }
     }
 
     public void reset() {
         fontManager.reload();
-        for (PageOperator operator : pageOperators) {
+        for (PageOperator operator : normalPage) {
             operator.page.dispose();
         }
-        pageOperators.clear();
-        highWay = CacheBuilder.newBuilder().maximumSize(10240).build();
-        inGenerate.clear();
+        for (PageOperator operator : boldPage) {
+            operator.page.dispose();
+        }
+        normalPage.clear();
+        boldPage.clear();
+        normalHighWay = CacheBuilder.newBuilder().maximumSize(10240).build();
+        boldHighWay = CacheBuilder.newBuilder().maximumSize(10240).build();
+        normalInGenerate.clear();
+        boldInGenerate.clear();
     }
 
 
@@ -147,7 +232,7 @@ public class CharacterGenFactory {
             this.factory = factory;
         }
 
-        public void addCharacter(int codepoint, Font font) {
+        public void addCharacter(int codepoint, Font font, int type) {
             inAdd.set(true);
             char[] chars = Character.toChars(codepoint);
             String character = new String(chars);
@@ -157,14 +242,14 @@ public class CharacterGenFactory {
                     page.addCharacterTexture(imageAndInfo);
                 } finally {
                     inAdd.set(false);
-                    factory.generateDone(codepoint);
+                    factory.generateDone(codepoint, type);
                 }
             }, "添加字符:【"+character+"】").start();
         }
 
-        public void addCharacter(String character, Font font) {
+        public void addCharacter(String character, Font font, int type) {
             int codepoint = character.codePointAt(0);
-            addCharacter(codepoint, font);
+            addCharacter(codepoint, font, type);
         }
 
         public boolean isFull() {
