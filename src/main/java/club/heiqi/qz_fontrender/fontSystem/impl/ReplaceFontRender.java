@@ -8,7 +8,6 @@ import com.ibm.icu.text.ArabicShapingException;
 import com.ibm.icu.text.Bidi;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.settings.GameSettings;
@@ -18,7 +17,6 @@ import org.lwjgl.opengl.GL11;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 
 public class ReplaceFontRender extends FontRenderer {
@@ -160,6 +158,12 @@ public class ReplaceFontRender extends FontRenderer {
     @Override
     public void onResourceManagerReload(IResourceManager p_110549_1_) {
         factory.reset();
+
+        isPrepare = false;
+        prepareCodepoint = 0x0;
+
+        isLoaded = false;
+        randomSampleWidthList = null;
     }
 
     @Override
@@ -316,7 +320,7 @@ public class ReplaceFontRender extends FontRenderer {
                 float charWidth = charAdvance / info.width() * this.curCharWidth + Config.characterSpacing;
 
                 // 处理随机化字符
-                if (randomStyle && loaded) {
+                if (randomStyle && isLoaded) {
                     float randomWidth = 0;
                     int randomCharCodepoint;
                     do {
@@ -551,9 +555,11 @@ public class ReplaceFontRender extends FontRenderer {
         return builder.toString();
     }
 
-    private boolean loaded = false;
+
+
+    private boolean isLoaded = false;
     private void loadRandomSampleWidth() {
-        if (loaded) return;
+        if (isLoaded) return;
 
         if (randomSampleWidthList == null) {
             for (int i = 0; i < randomSample.length(); i++) {
@@ -578,7 +584,22 @@ public class ReplaceFontRender extends FontRenderer {
             randomSampleWidthList[i] = info.advanceX();
         }
 
-        loaded = true;
+        isLoaded = true;
+    }
+
+    private boolean isPrepare = false;
+    private int prepareCodepoint = 0x0;
+    private void prepareChars() {
+        if (isPrepare) return;
+        int count = 0;
+        for (prepareCodepoint = 0x0; prepareCodepoint < 0xffff;) {
+            if (count >= 10) return;
+            factory.getPageOrGenChar(prepareCodepoint, EnumFontType.NORMAL);
+            count++;
+            prepareCodepoint++;
+        }
+
+        isPrepare = true;
     }
 
     // private int sizeStringToWidth(String text, int wrapWidth) {
