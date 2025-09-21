@@ -363,7 +363,7 @@ public class ReplaceFontRender extends FontRenderer {
             GL11.glEnable(GL11.GL_TEXTURE_2D);
         }
 
-        this.posX += (float)((int)f);
+        this.posX += f;
     }
 
     private void resetStyles() {
