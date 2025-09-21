@@ -27,7 +27,7 @@ public class MixinNewFontRenderer01 {
 
         FontRenderer replacer = new ReplaceFontRender(
                 mc.gameSettings, fontRenderer.locationFontTexture, mc.renderEngine, false,
-                2048,2048,32,32,5,32f*0.8f
+                2048,2048,64,64,5,64f*0.8f
         );
         mc.standardGalacticFontRenderer = replacer;
         mc.fontRenderer = replacer;

@@ -22,7 +22,7 @@ public class MixinMinecraft {
         Minecraft mc = ((Minecraft)((Object)this));
         if (qz_FontRender$replaceFontRender == null) {
             qz_FontRender$replaceFontRender = new ReplaceFontRender(mc.gameSettings, mc.fontRenderer.locationFontTexture, mc.renderEngine, false,
-                    2048, 2048, 32, 32, 5, 32*0.8f);
+                    2048, 2048, 64, 64, 5, 64*0.8f);
         }
 
         if (!(mc.fontRenderer instanceof ReplaceFontRender)) {
