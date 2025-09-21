@@ -21,24 +21,24 @@ public record CharacterInfo(int codepoint,
      * 左侧
      */
     public double getU0(int width) {
-        return (double) x / width;
+        return (double) (x + 1) / width;
     }
     /**
      * 右侧
      */
     public double getU1(int width) {
-        return (double) (x + this.width) / width;
+        return (double) (x + this.width - 1) / width;
     }
     /**
      * 上侧
      */
     public double getV0(int height) {
-        return (double) y / height;
+        return (double) (y + 1) / height;
     }
     /**
      * 下侧
      */
     public double getV1(int height) {
-        return (double) (y + this.height) / height;
+        return (double) (y + this.height - 1) / height;
     }
 }
