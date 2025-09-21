@@ -102,7 +102,7 @@ public class CharacterGenFactory {
     @Nullable
     public CharacterTexturePage getPageOrGenChar(int codepoint, int type) {
         switch (type) {
-            case 1 -> {
+            case EnumFontType.BOLD -> {
                 if (boldInGenerate.contains(codepoint)) return null;  // 正在生成
 
                 // 1. 先访问高速缓存
@@ -122,7 +122,7 @@ public class CharacterGenFactory {
                 }
 
                 // 执行到这代表没有找到对应的Page
-                addCharacter(codepoint, 1);
+                addCharacter(codepoint, type);
                 return null;
             }
             default -> {
@@ -145,7 +145,7 @@ public class CharacterGenFactory {
                 }
 
                 // 执行到这代表没有找到对应的Page
-                addCharacter(codepoint, 0);
+                addCharacter(codepoint, type);
                 return null;
             }
         }

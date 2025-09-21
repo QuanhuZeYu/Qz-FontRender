@@ -157,9 +157,18 @@ public class CharacterTexturePage {
                     GL11.GL_UNSIGNED_BYTE,
                     buffer
             );
+            // GL11.glTexImage2D(
+            //         GL11.GL_TEXTURE_2D,
+            //         0,
+            //         GL11.GL_RGBA8,
+            //         width, height, 0,
+            //         GL11.GL_RGBA,
+            //         GL11.GL_UNSIGNED_BYTE,
+            //         buffer
+            // );
         }
 
-        GL30.glGenerateMipmap(GL11.GL_TEXTURE_2D);
+        if (full) GL30.glGenerateMipmap(GL11.GL_TEXTURE_2D);
 
         // 设置纹理参数
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);

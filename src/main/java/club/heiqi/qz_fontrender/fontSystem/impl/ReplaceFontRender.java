@@ -591,11 +591,14 @@ public class ReplaceFontRender extends FontRenderer {
 
     private boolean isPrepare = false;
     private int prepareCodepoint = 0x0;
+    private long lastPrepare = System.currentTimeMillis();
     private void prepareChars() {
         if (isPrepare) return;
+        if (System.currentTimeMillis() - lastPrepare < 1000_0) return;
+        lastPrepare = System.currentTimeMillis();
         int count = 0;
-        for (prepareCodepoint = 0x0; prepareCodepoint < 0xffff;) {
-            if (count >= 10) return;
+        while (prepareCodepoint < 0xffff) {
+            if (count >= 500) return;
             factory.getPageOrGenChar(prepareCodepoint, EnumFontType.NORMAL);
             count++;
             prepareCodepoint++;
