@@ -335,35 +335,21 @@ public class ReplaceFontRender extends FontRenderer {
         }
     }
 
-    protected void doDraw(float f) {
-        Tessellator tessellator;
-
-        if (this.strikethroughStyle) {
-            tessellator = Tessellator.instance;
-            GL11.glDisable(GL11.GL_TEXTURE_2D);
-            tessellator.startDrawingQuads();
-            tessellator.addVertex((double)this.posX, (double)(this.posY + (float)((this.curCharWidth + Config.lineSpacing) / 2)), 0.0D);
-            tessellator.addVertex((double)(this.posX + f), (double)(this.posY + (float)((this.curCharWidth + Config.lineSpacing) / 2)), 0.0D);
-            tessellator.addVertex((double)(this.posX + f), (double)(this.posY + (float)((this.curCharWidth + Config.lineSpacing) / 2) - 1.0F), 0.0D);
-            tessellator.addVertex((double)this.posX, (double)(this.posY + (float)((this.curCharWidth + Config.lineSpacing) / 2) - 1.0F), 0.0D);
-            tessellator.draw();
-            GL11.glEnable(GL11.GL_TEXTURE_2D);
-        }
-
+    protected void doDraw(float width) {
         if (this.underlineStyle) {
-            tessellator = Tessellator.instance;
             GL11.glDisable(GL11.GL_TEXTURE_2D);
-            tessellator.startDrawingQuads();
-            int l = this.underlineStyle ? -1 : 0;
-            tessellator.addVertex((double)(this.posX + (float)l), (double)(this.posY + (float)(this.curCharWidth + Config.lineSpacing)), 0.0D);
-            tessellator.addVertex((double)(this.posX + f), (double)(this.posY + (float)(this.curCharWidth + Config.lineSpacing)), 0.0D);
-            tessellator.addVertex((double)(this.posX + f), (double)(this.posY + (float)(this.curCharWidth + Config.lineSpacing) - 1.0F), 0.0D);
-            tessellator.addVertex((double)(this.posX + (float)l), (double)(this.posY + (float)(this.curCharWidth + Config.lineSpacing) - 1.0F), 0.0D);
-            tessellator.draw();
+            GL11.glBegin(GL11.GL_QUADS);
+
+            GL11.glVertex3d((this.posX), (this.posY + (this.curCharWidth)), 0.0d);
+            GL11.glVertex3d((this.posX + width), (this.posY + (this.curCharWidth)), 0.0d);
+            GL11.glVertex3d((this.posX + width), (this.posY + (this.curCharWidth) - 1.0d), 0.0d);
+            GL11.glVertex3d((this.posX), (this.posY + (this.curCharWidth) - 1.0d), 0.0d);
+
+            GL11.glEnd();
             GL11.glEnable(GL11.GL_TEXTURE_2D);
         }
 
-        this.posX += f;
+        this.posX += width;
     }
 
     private void resetStyles() {
@@ -416,8 +402,20 @@ public class ReplaceFontRender extends FontRenderer {
             setColor(this.red, this.blue, this.green, this.alpha);
             this.posX = fx;
             this.posY = fy;
+
+            GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
+            GL11.glDisable(GL11.GL_LIGHTING);
+            int alphaFunc = GL11.glGetInteger(GL11.GL_ALPHA_TEST_FUNC);
+            float alphaRef = GL11.glGetFloat(GL11.GL_ALPHA_TEST_REF);
+            // 启用 Alpha 测试并设置函数和阈值
+            GL11.glEnable(GL11.GL_ALPHA_TEST);
+            GL11.glAlphaFunc(GL11.GL_GREATER, 0.45f);
             this.renderStringAtPos(text, shadow);
-            return (int)this.posX;
+            GL11.glAlphaFunc(alphaFunc, alphaRef);
+            GL11.glPopAttrib();
+
+
+            return (int)Math.ceil(this.posX);
         }
     }
 
@@ -456,11 +454,11 @@ public class ReplaceFontRender extends FontRenderer {
 
 
 
-    private String trimStringNewline(String p_78273_1_) {
-        while (p_78273_1_ != null && p_78273_1_.endsWith("\n")) {
-            p_78273_1_ = p_78273_1_.substring(0, p_78273_1_.length() - 1);
+    private String trimStringNewline(String text) {
+        while (text != null && text.endsWith("\n")) {
+            text = text.substring(0, text.length() - 1);
         }
-        return p_78273_1_;
+        return text;
     }
 
     private void renderSplitString(String str, int x, int y, int wrapWidth, boolean addShadow) {
@@ -561,16 +559,16 @@ public class ReplaceFontRender extends FontRenderer {
     //     return charCount;
     // }
 
-    private String getFormatFromString(String text) {
-        StringBuilder builder = new StringBuilder();
-        String[] splits = text.split("(?=§)");
-        for (String split : splits) {
-            // 提取无操作符文字
-            if (split.startsWith("§") && split.length() <= 2) continue;
-            String s = split;
-            if (split.startsWith("§")) s = split.substring(2);
-            builder.append(s);
-        }
-        return builder.toString();
-    }
+    // private String getFormatFromString(String text) {
+    //     StringBuilder builder = new StringBuilder();
+    //     String[] splits = text.split("(?=§)");
+    //     for (String split : splits) {
+    //         // 提取无操作符文字
+    //         if (split.startsWith("§") && split.length() <= 2) continue;
+    //         String s = split;
+    //         if (split.startsWith("§")) s = split.substring(2);
+    //         builder.append(s);
+    //     }
+    //     return builder.toString();
+    // }
 }
