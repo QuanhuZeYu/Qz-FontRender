@@ -222,7 +222,7 @@ public class CharacterTexturePage {
         double v1 = info.getV1(this.height);
 
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, textureID);
-        FloatBuffer floatBuffer = BufferUtils.createFloatBuffer(4);
+        FloatBuffer floatBuffer = BufferUtils.createFloatBuffer(16);
         GL11.glGetFloat(GL11.GL_CURRENT_COLOR, floatBuffer);
         float alpha = ((color >> 24) & 255) / 255f;
         float red = ((color >> 16) & 255) / 255f;
