@@ -13,13 +13,14 @@ public class Config {
     public static String configPath;
     public static Configuration config;
 
-    public static boolean guiScaleFix = true;
+    public static boolean guiScaleFix = false;
     public static float characterSpacing = 0.1f;
     public static float spaceWidth = ReplaceFontRender.DEFAULT_CHAR_WIDTH/2f;
     public static float shadowOffsetX = 0.5f;
     public static float shadowOffsetY = 0.5f;
     public static float charSize = 8.5f;
     public static float lineSpacing = 1.0f;
+    public static float guiScale = 4.0f;
 
     public void init(File configFile) {
         if (config == null) {
@@ -30,7 +31,9 @@ public class Config {
     }
 
     public void load() {
-        guiScaleFix = config.getBoolean("guiScaleFix", Configuration.CATEGORY_GENERAL, true, "GUI缩放修复");
+        guiScaleFix = config.getBoolean("guiScaleFix", Configuration.CATEGORY_GENERAL, false, "GUI缩放修复");
+        guiScale = config.getFloat("guiScale", Configuration.CATEGORY_GENERAL, 4.0f, Float.MIN_VALUE, Float.MAX_VALUE, "界面缩放(注意！此值会覆盖原版设定值！)");
+
         characterSpacing = config.getFloat("characterSpacing", Configuration.CATEGORY_GENERAL, 0.1f, Float.MIN_VALUE, Float.MAX_VALUE, "字间距");
         spaceWidth = config.getFloat("spaceWidth", Configuration.CATEGORY_GENERAL, ReplaceFontRender.DEFAULT_CHAR_WIDTH/2f, Float.MIN_VALUE, Float.MAX_VALUE, "空格宽度");
         shadowOffsetX = config.getFloat("shadowOffsetX", Configuration.CATEGORY_GENERAL, -0.5f, -Float.MAX_VALUE, Float.MAX_VALUE, "投影位置偏移X");

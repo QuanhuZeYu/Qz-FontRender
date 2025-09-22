@@ -443,20 +443,20 @@ public class ReplaceFontRender extends FontRenderer {
             // 启用 Alpha 测试并设置函数和阈值
             GL11.glEnable(GL11.GL_ALPHA_TEST);
             GL11.glAlphaFunc(GL11.GL_GREATER, 0.3f);
-            float scale = GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX);
-            if (scale < 1.0 && Config.guiScaleFix) {
-                GL11.glPushMatrix();
-                GL11.glScalef(1/scale, 1/scale, 1/scale);
-                GL11.glTranslatef(posX * (scale - 1) * 2, posY + FONT_HEIGHT * (scale - 1) * 2, 0);
-            }
+            // float scale = GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX);
+            // if (scale < 1.0 && Config.guiScaleFix) {
+            //     GL11.glPushMatrix();
+            //     GL11.glScalef(1/scale, 1/scale, 1/scale);
+            //     GL11.glTranslatef(posX * (scale - 1) * 2, posY + FONT_HEIGHT * (scale - 1) * 2, 0);
+            // }
 
             this.renderStringAtPos(text, shadow);
 
             GL11.glAlphaFunc(alphaFunc, alphaRef);
             GL11.glPopAttrib();
-            if (scale < 1.0 && Config.guiScaleFix) {
-                GL11.glPopMatrix();
-            }
+            // if (scale < 1.0 && Config.guiScaleFix) {
+            //     GL11.glPopMatrix();
+            // }
 
 
             return (int)Math.ceil(this.posX);
