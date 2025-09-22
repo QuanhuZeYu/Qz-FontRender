@@ -13,6 +13,7 @@ public class Config {
     public static String configPath;
     public static Configuration config;
 
+    public static boolean guiScaleFix = true;
     public static float characterSpacing = 0.1f;
     public static float spaceWidth = ReplaceFontRender.DEFAULT_CHAR_WIDTH/2f;
     public static float shadowOffsetX = 0.5f;
@@ -29,6 +30,7 @@ public class Config {
     }
 
     public void load() {
+        guiScaleFix = config.getBoolean("guiScaleFix", Configuration.CATEGORY_GENERAL, true, "GUI缩放修复");
         characterSpacing = config.getFloat("characterSpacing", Configuration.CATEGORY_GENERAL, 0.1f, Float.MIN_VALUE, Float.MAX_VALUE, "字间距");
         spaceWidth = config.getFloat("spaceWidth", Configuration.CATEGORY_GENERAL, ReplaceFontRender.DEFAULT_CHAR_WIDTH/2f, Float.MIN_VALUE, Float.MAX_VALUE, "空格宽度");
         shadowOffsetX = config.getFloat("shadowOffsetX", Configuration.CATEGORY_GENERAL, -0.5f, -Float.MAX_VALUE, Float.MAX_VALUE, "投影位置偏移X");

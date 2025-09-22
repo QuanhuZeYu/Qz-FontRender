@@ -8,6 +8,7 @@ import com.ibm.icu.text.ArabicShapingException;
 import com.ibm.icu.text.Bidi;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.settings.GameSettings;
@@ -244,6 +245,7 @@ public class ReplaceFontRender extends FontRenderer {
         loadRandomSampleWidth();
 
         this.curCharWidth = Config.charSize;
+        this.FONT_HEIGHT = (int) Config.charSize;
         // 1. 以§做分割
         String[] splits = s.split("(?=§)");
 
@@ -440,10 +442,21 @@ public class ReplaceFontRender extends FontRenderer {
             float alphaRef = GL11.glGetFloat(GL11.GL_ALPHA_TEST_REF);
             // 启用 Alpha 测试并设置函数和阈值
             GL11.glEnable(GL11.GL_ALPHA_TEST);
-            GL11.glAlphaFunc(GL11.GL_GREATER, 0.45f);
+            GL11.glAlphaFunc(GL11.GL_GREATER, 0.3f);
+            float scale = GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX);
+            if (scale < 1.0 && Config.guiScaleFix) {
+                GL11.glPushMatrix();
+                GL11.glScalef(1/scale, 1/scale, 1/scale);
+                GL11.glTranslatef(posX * (scale - 1) * 2, posY + FONT_HEIGHT * (scale - 1) * 2, 0);
+            }
+
             this.renderStringAtPos(text, shadow);
+
             GL11.glAlphaFunc(alphaFunc, alphaRef);
             GL11.glPopAttrib();
+            if (scale < 1.0 && Config.guiScaleFix) {
+                GL11.glPopMatrix();
+            }
 
 
             return (int)Math.ceil(this.posX);
