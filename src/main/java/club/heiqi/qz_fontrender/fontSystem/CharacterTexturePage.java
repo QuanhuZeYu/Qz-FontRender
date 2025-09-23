@@ -1,5 +1,6 @@
 package club.heiqi.qz_fontrender.fontSystem;
 
+import org.joml.Vector2f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
@@ -31,6 +32,11 @@ public class CharacterTexturePage {
     public boolean full = false;
     /**标记是否需要更新GL侧纹理*/
     public boolean needUpload = false;
+    /**间断生成Mipmap避免极端卡顿*/
+    public static long lastGenMipmap = System.currentTimeMillis();
+
+    /**opengl渲染工具*/
+    public static RenderTool renderTool;
 
     public CharacterTexturePage(int width, int height, int charWidth, int charHeight) {
         this.width = width;
@@ -168,10 +174,13 @@ public class CharacterTexturePage {
             // );
         }
 
-        if (full) GL30.glGenerateMipmap(GL11.GL_TEXTURE_2D);
+        // if (System.currentTimeMillis() - lastGenMipmap > 100) {
+        GL30.glGenerateMipmap(GL11.GL_TEXTURE_2D);
+        lastGenMipmap = System.currentTimeMillis();
+        // }
 
         // 设置纹理参数
-        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR_MIPMAP_LINEAR);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, GL13.GL_CLAMP_TO_BORDER);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, GL13.GL_CLAMP_TO_BORDER);
@@ -183,67 +192,58 @@ public class CharacterTexturePage {
         }
     }
 
-    public CharacterInfo renderChar(int codepoint, int color, float x, float y, float width, float height) {
+    public CharacterInfo renderChar(int codepoint, int color, float x, float y, float width, float height, boolean italic) {
         if (needUpload) loadTexture();
 
         CharacterInfo info = getInfo(codepoint);
-        double u0 = info.getU0(this.width);
-        double u1 = info.getU1(this.width);
-        double v0 = info.getV0(this.height);
-        double v1 = info.getV1(this.height);
-
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D, textureID);
-        FloatBuffer floatBuffer = BufferUtils.createFloatBuffer(4);
-        GL11.glGetFloat(GL11.GL_CURRENT_COLOR, floatBuffer);
-        float alpha = ((color >> 24) & 255) / 255f;
-        float red = ((color >> 16) & 255) / 255f;
-        float green = ((color >> 8) & 255) / 255f;
-        float blue = (color & 255) / 255f;
-        GL11.glColor4f(red, green, blue, alpha);
-
-        GL11.glBegin(GL11.GL_QUADS);
-        GL11.glTexCoord2d(u0, v0);
-        GL11.glVertex3f(x, y, 0);
-        GL11.glTexCoord2d(u0, v1);
-        GL11.glVertex3f(x, y+height, 0);
-        GL11.glTexCoord2d(u1, v1);
-        GL11.glVertex3f(x+width, y+height, 0);
-        GL11.glTexCoord2d(u1, v0);
-        GL11.glVertex3f(x+width, y, 0);
-        GL11.glEnd();
-
-        GL11.glColor4f(floatBuffer.get(0), floatBuffer.get(1), floatBuffer.get(2), floatBuffer.get(3));
-
+        renderChar(info,color,x,y,width,height,italic);
         return info;
     }
 
     public void renderChar(CharacterInfo info, int color, float x, float y, float width, float height, boolean italic) {
         if (needUpload) loadTexture();
+        // if (renderTool == null) {
+        //     renderTool = new RenderTool();
+        //     renderTool.init();
+        // }
 
-        double u0 = info.getU0(this.width);
-        double u1 = info.getU1(this.width);
-        double v0 = info.getV0(this.height);
-        double v1 = info.getV1(this.height);
+        float u0 = (float)info.getU0(this.width);
+        float u1 = (float)info.getU1(this.width);
+        float v0 = (float)info.getV0(this.height);
+        float v1 = (float)info.getV1(this.height);
 
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, textureID);
         FloatBuffer floatBuffer = BufferUtils.createFloatBuffer(16);
         GL11.glGetFloat(GL11.GL_CURRENT_COLOR, floatBuffer);
-        float alpha = ((color >> 24) & 255) / 255f;
-        float red = ((color >> 16) & 255) / 255f;
-        float green = ((color >> 8) & 255) / 255f;
-        float blue = (color & 255) / 255f;
-        GL11.glColor4f(red, green, blue, alpha);
 
-        GL11.glBegin(GL11.GL_QUADS);
-        GL11.glTexCoord2d(u0, v0);
-        GL11.glVertex3f(italic ? x+2 : x, y, 0);
-        GL11.glTexCoord2d(u0, v1);
-        GL11.glVertex3f(x, y+height, 0);
-        GL11.glTexCoord2d(u1, v1);
-        GL11.glVertex3f(x+width, y+height, 0);
-        GL11.glTexCoord2d(u1, v0);
-        GL11.glVertex3f(italic ? x+width+2 : x+width, y, 0);
-        GL11.glEnd();
+        float[] vertex = {
+                italic ? x+2 : x, y, 0,
+                x, y+height, 0,
+                x+width, y+height, 0,
+                italic ? x+width+2 : x+width, y, 0
+        };
+        float[] uv = {
+                u0, v0,
+                u0, v1,
+                u1, v1,
+                u1, v0
+        };
+        int[] index = {
+                0,1,2, 2,3,0
+        };
+
+        renderTool.render(vertex, uv, index, color, new Vector2f(width, height));
+
+        // GL11.glBegin(GL11.GL_QUADS);
+        // GL11.glTexCoord2d(u0, v0);
+        // GL11.glVertex3f(italic ? x+2 : x, y, 0);
+        // GL11.glTexCoord2d(u0, v1);
+        // GL11.glVertex3f(x, y+height, 0);
+        // GL11.glTexCoord2d(u1, v1);
+        // GL11.glVertex3f(x+width, y+height, 0);
+        // GL11.glTexCoord2d(u1, v0);
+        // GL11.glVertex3f(italic ? x+width+2 : x+width, y, 0);
+        // GL11.glEnd();
 
         GL11.glColor4f(floatBuffer.get(0), floatBuffer.get(1), floatBuffer.get(2), floatBuffer.get(3));
     }

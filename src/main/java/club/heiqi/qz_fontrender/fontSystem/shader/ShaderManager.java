@@ -3,12 +3,19 @@ package club.heiqi.qz_fontrender.fontSystem.shader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.joml.Matrix4f;
+import org.joml.Vector2f;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.*;
 
 import javax.annotation.Nullable;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.FloatBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -68,6 +75,35 @@ public class ShaderManager {
         LOG.info("🚀着色器创建成功⚙");
 
         return this;
+    }
+
+    public ShaderManager loadFromJar(String vertexPath, String fragmentPath, @Nullable String geometryPath) {
+        String vertexText = readJar(vertexPath);
+        String fragmentText = readJar(fragmentPath);
+        String geometryText = null;
+        if (geometryPath != null) geometryText = readJar(geometryPath);
+
+        return loadShader(vertexText, fragmentText, geometryText);
+    }
+
+    public String readJar(String path) {
+        if (!path.startsWith("/")) path = "/" + path;
+        StringBuilder content = new StringBuilder();
+
+        try (InputStream is = this.getClass().getResourceAsStream(path);
+             BufferedReader reader = new BufferedReader(
+                     new InputStreamReader(is, StandardCharsets.UTF_8)
+             )
+        ) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                content.append(line).append(System.lineSeparator());
+            }
+        } catch (IOException | NullPointerException e) {
+            LOG.error(("读取文件失败:" + path + e));
+            return "";
+        }
+        return content.toString();
     }
 
     public int createShader(String source, int shaderType) {
@@ -130,10 +166,24 @@ public class ShaderManager {
         }
     }
 
-    public void setUniform3F(String name, Vector3f value) {
+    public void setUniformVec2(String name, Vector2f value) {
+        int location = getUniformLocation(name);
+        if (location != -1) {
+            GL20.glUniform2f(location, value.x, value.y);
+        }
+    }
+
+    public void setUniformVec3(String name, Vector3f value) {
         int location = getUniformLocation(name);
         if (location != -1) {
             GL20.glUniform3f(location, value.x, value.y, value.z);
+        }
+    }
+
+    public void setUniformVec4(String name, Vector4f value) {
+        int location = getUniformLocation(name);
+        if (location != -1) {
+            GL20.glUniform4f(location, value.x, value.y, value.z, value.w);
         }
     }
 

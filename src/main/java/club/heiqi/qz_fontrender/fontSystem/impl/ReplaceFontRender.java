@@ -3,6 +3,7 @@ package club.heiqi.qz_fontrender.fontSystem.impl;
 import club.heiqi.qz_fontrender.Config;
 import club.heiqi.qz_fontrender.MyMod;
 import club.heiqi.qz_fontrender.fontSystem.*;
+import club.heiqi.qz_fontrender.fontSystem.shader.ShaderManager;
 import com.ibm.icu.text.ArabicShaping;
 import com.ibm.icu.text.ArabicShapingException;
 import com.ibm.icu.text.Bidi;
@@ -34,7 +35,6 @@ public class ReplaceFontRender extends FontRenderer {
         super(gameSettings, location, manager, b);
         fontManager = new FontManager(fontSize);
         factory = new CharacterGenFactory(fontManager, textureWidth, textureHeight, charWidth, charHeight, maintainPool);
-        setUnicodeFlag(true);
     }
 
     public void setCharSize(float size) {curCharWidth = size;}
@@ -106,10 +106,9 @@ public class ReplaceFontRender extends FontRenderer {
             }
 
             CharacterTexturePage page = factory.getPageOrGenChar(codepoint, 0);
-            if (page == null) {
+            if (page == null || s.equals(" ")) {
                 width += Config.spaceWidth;
-            }
-            else {
+            } else {
                 CharacterInfo info = page.getInfo(codepoint);
                 width += info.advanceX()/info.width() * this.curCharWidth + Config.characterSpacing;
             }
@@ -438,11 +437,11 @@ public class ReplaceFontRender extends FontRenderer {
 
             GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
             GL11.glDisable(GL11.GL_LIGHTING);
-            int alphaFunc = GL11.glGetInteger(GL11.GL_ALPHA_TEST_FUNC);
-            float alphaRef = GL11.glGetFloat(GL11.GL_ALPHA_TEST_REF);
+            // int alphaFunc = GL11.glGetInteger(GL11.GL_ALPHA_TEST_FUNC);
+            // float alphaRef = GL11.glGetFloat(GL11.GL_ALPHA_TEST_REF);
             // 启用 Alpha 测试并设置函数和阈值
             GL11.glEnable(GL11.GL_ALPHA_TEST);
-            GL11.glAlphaFunc(GL11.GL_GREATER, 0.3f);
+            // GL11.glAlphaFunc(GL11.GL_GREATER, 0.3f);
             // float scale = GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX);
             // if (scale < 1.0 && Config.guiScaleFix) {
             //     GL11.glPushMatrix();
@@ -450,9 +449,15 @@ public class ReplaceFontRender extends FontRenderer {
             //     GL11.glTranslatef(posX * (scale - 1) * 2, posY + FONT_HEIGHT * (scale - 1) * 2, 0);
             // }
 
+            if (CharacterTexturePage.renderTool == null) {
+                CharacterTexturePage.renderTool = new RenderTool();
+                CharacterTexturePage.renderTool.init();
+            }
+            CharacterTexturePage.renderTool.shaderManager.bind();
             this.renderStringAtPos(text, shadow);
+            CharacterTexturePage.renderTool.shaderManager.unbind();
 
-            GL11.glAlphaFunc(alphaFunc, alphaRef);
+            // GL11.glAlphaFunc(alphaFunc, alphaRef);
             GL11.glPopAttrib();
             // if (scale < 1.0 && Config.guiScaleFix) {
             //     GL11.glPopMatrix();

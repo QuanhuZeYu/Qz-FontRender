@@ -21,6 +21,7 @@ public class Config {
     public static float charSize = 8.5f;
     public static float lineSpacing = 1.0f;
     public static float guiScale = 4.0f;
+    public static float boldAmount = 0.005f;
 
     public void init(File configFile) {
         if (config == null) {
@@ -40,6 +41,7 @@ public class Config {
         shadowOffsetY = config.getFloat("shadowOffsetY", Configuration.CATEGORY_GENERAL, -0.5f, -Float.MAX_VALUE, Float.MAX_VALUE, "投影位置偏移Y");
         charSize = config.getFloat("charSize", Configuration.CATEGORY_GENERAL, 8.5f, -Float.MAX_VALUE, Float.MAX_VALUE, "字体大小");
         lineSpacing = config.getFloat("lineSpacing", Configuration.CATEGORY_GENERAL, 1.0f, -Float.MAX_VALUE, Float.MAX_VALUE, "行间距");
+        boldAmount = config.getFloat("boldAmount", Configuration.CATEGORY_GENERAL, 0.005f, -Float.MAX_VALUE, Float.MAX_VALUE, "字符加粗");
 
         if (config.hasChanged()) {
             config.save();
