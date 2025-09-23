@@ -76,6 +76,8 @@ public class ReplaceFontRender extends FontRenderer {
 
     @Override
     public int getStringWidth(final String text) {
+        if (text == null) return 0;
+
         float width = 0;
         // 1. 以§做分割
         String[] splits = text.split("(?=§)");
