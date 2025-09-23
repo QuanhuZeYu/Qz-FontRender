@@ -6,14 +6,12 @@ import org.apache.logging.log4j.Logger;
 import java.awt.Font;
 import java.awt.FontFormatException;
 import java.awt.GraphicsEnvironment;
+import java.awt.font.FontRenderContext;
+import java.awt.font.GlyphVector;
+import java.awt.geom.AffineTransform;
 import java.io.*;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 
 public class FontManager {
     public static Logger LOG = LogManager.getLogger();
@@ -25,16 +23,17 @@ public class FontManager {
         this.fontSize = fontSize;
         initFontAssets();
         loadAssetsFontsTTF();
-        loadInstalledFontsTTF();
+        // 不再载入系统字体保持可控性
+        // loadInstalledFontsTTF();
     }
 
     public Font findSuitable(int codepoint, int type) {
         for (Font font : fonts) {
-            if (type == EnumFontType.NORMAL && (font.isPlain() && !font.getName().toLowerCase().contains("bold")) && font.canDisplay(codepoint)) {
-                return font;
+            if (type == EnumFontType.NORMAL && !font.getName().toLowerCase().contains("bold") && checkFontCanDisplay(font, codepoint)) {
+                return font.deriveFont(Font.PLAIN);
             }
-            if (type == EnumFontType.BOLD && (font.isBold() || font.getName().toLowerCase().contains("bold")) && font.canDisplay(codepoint)) {
-                return font;
+            if (type == EnumFontType.BOLD && font.getName().toLowerCase().contains("bold") && checkFontCanDisplay(font, codepoint)) {
+                return font.deriveFont(Font.BOLD);
             }
         }
 
@@ -56,28 +55,30 @@ public class FontManager {
         File fontDir = new File(System.getProperty("user.dir"), "fonts");
 
         List<String> jarList = Arrays.asList(
-                "fonts/LXGWWenKai-Light.ttf",
-                "fonts/LXGWWenKai-Medium.ttf",
-                "fonts/LXGWWenKai-Regular.ttf",
-                "fonts/LXGWWenKaiMono-Light.ttf",
-                "fonts/LXGWWenKaiMono-Medium.ttf",
-                "fonts/LXGWWenKaiMono-Regular.ttf",
-                "fonts/segoeui.ttf",
-                "fonts/segoeuib.ttf",
-                "fonts/segoeuii.ttf",
-                "fonts/segoeuil.ttf",
-                "fonts/segoeuisl.ttf",
-                "fonts/segoeuiz.ttf",
-                "fonts/seguibl.ttf",
-                "fonts/seguibli.ttf",
-                "fonts/seguiemj.ttf",
-                "fonts/seguihis.ttf",
-                "fonts/seguili.ttf",
-                "fonts/seguisb.ttf",
-                "fonts/seguisbi.ttf",
-                "fonts/seguisli.ttf",
-                "fonts/seguisym.ttf",
-                "fonts/SegUIVar.ttf"
+                "fonts/10_NotoSerifCJKsc-VF.ttf",
+                "fonts/11_seguiemj.ttf",
+                "fonts/12_segmdl2.ttf",
+                "fonts/12_SegoeIcons.ttf",
+                "fonts/12_segoepr.ttf",
+                "fonts/12_segoeprb.ttf",
+                "fonts/12_segoesc.ttf",
+                "fonts/12_segoescb.ttf",
+                "fonts/12_segoeui.ttf",
+                "fonts/12_segoeuib.ttf",
+                "fonts/12_segoeuii.ttf",
+                "fonts/12_segoeuil.ttf",
+                "fonts/12_segoeuisl.ttf",
+                "fonts/12_segoeuiz.ttf",
+                "fonts/12_seguibl.ttf",
+                "fonts/12_seguibli.ttf",
+                "fonts/12_seguihis.ttf",
+                "fonts/12_seguili.ttf",
+                "fonts/12_seguisb.ttf",
+                "fonts/12_seguisbi.ttf",
+                "fonts/12_seguisli.ttf",
+                "fonts/12_seguisym.ttf",
+                "fonts/12_SegUIVar.ttf",
+                "fonts/13_MaterialSymbolsSharp-VariableFont_FILL,GRAD,opsz,wght.ttf"
         );
         for (String jarFile : jarList) {
             File saveFile = new File(fontDir, jarFile.split("/")[1]);
@@ -162,6 +163,25 @@ public class FontManager {
                 LOG.error(e);
             }
         }
+    }
+
+    public boolean checkFontCanDisplay(Font font, int codepoint) {
+        FontRenderContext frc = new FontRenderContext(new AffineTransform(), true, true);
+        // 字形信息
+        GlyphVector glyphVector = font.createGlyphVector(frc, new String(Character.toChars(codepoint)));
+
+        // 检查字形代码 - 如果为0，通常表示缺失字形
+        int glyphCode = glyphVector.getGlyphCode(0);
+        if (glyphCode == 0 || glyphCode == font.getMissingGlyphCode()) {
+            return false;
+        }
+
+        // 检查字形轮廓
+        if (glyphVector.getGlyphOutline(0) == null) {
+            return false;
+        }
+
+        return true;
     }
 
     public void reload() {
