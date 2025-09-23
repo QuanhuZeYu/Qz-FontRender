@@ -19,7 +19,7 @@ public class CharacterTexturePage {
     /**每个字符单元大小*/
     public final int cWidth, cHeight;
     /**JavaAWT操作画布对象*/
-    public final BufferedImage image;
+    public BufferedImage image;
     /**OpenGL纹理页ID*/
     public int textureID;
     /**存储的字符和它的信息*/
@@ -168,15 +168,17 @@ public class CharacterTexturePage {
             // );
         }
 
-        if (full) GL30.glGenerateMipmap(GL11.GL_TEXTURE_2D);
+        GL30.glGenerateMipmap(GL11.GL_TEXTURE_2D);
 
         // 设置纹理参数
-        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR_MIPMAP_LINEAR);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, GL13.GL_CLAMP_TO_BORDER);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, GL13.GL_CLAMP_TO_BORDER);
 
         needUpload = false;
+
+        if (full) image = null;
     }
 
     public CharacterInfo renderChar(int codepoint, int color, float x, float y, float width, float height) {
