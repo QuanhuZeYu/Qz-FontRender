@@ -33,5 +33,11 @@ void main(void) {
 
     vec3 blendColor = texcolor.rgb * color.rgb;
 
+    float alpha = texcolor.a * color.a;
+
+    if (alpha < 0.3) {
+        alpha = 0;
+    }
+
     fragColor = vec4(blendColor, texcolor.a * color.a);
 }

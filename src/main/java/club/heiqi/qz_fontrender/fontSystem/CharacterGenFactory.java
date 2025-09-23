@@ -1,14 +1,14 @@
 package club.heiqi.qz_fontrender.fontSystem;
 
+import club.heiqi.qz_fontrender.Config;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
 import java.awt.*;
+import java.io.File;
 import java.util.ArrayList;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.BitSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -19,11 +19,14 @@ public class CharacterGenFactory {
     public final ArrayList<PageOperator> normalPage = new ArrayList<>(),
                                          boldPage = new ArrayList<>();
     /**高速缓存的字符*/
-    public Cache<Integer, CharacterTexturePage> normalHighWay = CacheBuilder.newBuilder().maximumSize(10240).build(),
-                                                boldHighWay = CacheBuilder.newBuilder().maximumSize(10240).build();
+    public Cache<Integer, CharacterTexturePage> normalHighWay = CacheBuilder.newBuilder().maximumSize(65536).build(),
+                                                boldHighWay = CacheBuilder.newBuilder().maximumSize(65536).build();
+    /**记录已经生成的字符*/
+    public final BitSet normalGenerated = new BitSet(65536),
+                        boldGenerated = new BitSet(65536);
     /**正在生成的字符*/
-    public final ConcurrentLinkedQueue<Integer> normalInGenerate = new ConcurrentLinkedQueue<>(),
-                                                boldInGenerate = new ConcurrentLinkedQueue<>();
+    public final ArrayList<Integer> normalInGenerate = new ArrayList<>(),
+                                    boldInGenerate = new ArrayList<>();
     /**页面大小*/
     public final int width, height;
     /**字符大小*/
@@ -51,6 +54,8 @@ public class CharacterGenFactory {
         if (maintainPool < 5) maintainPool = 5;
         this.maintainPool = maintainPool;
         checkPool();
+
+        if (Config.backendGeneration) new Preparer(this);
     }
 
     /**检查所有page始终保持有5个未满page*/
@@ -83,6 +88,7 @@ public class CharacterGenFactory {
             }
             return;
         }
+        under = 0;
         for (PageOperator pageOperator : boldPage) {
             if (!pageOperator.isFull()) under++;
         }
@@ -112,18 +118,22 @@ public class CharacterGenFactory {
                     return page;
                 }
 
-                // 2. 高速缓存不存在则遍历所有纹理集
-                for (PageOperator operator : boldPage) {
-                    if (operator.page.isCharInPage(codepoint)) {
-                        // 缓存一次
-                        boldHighWay.put(codepoint, operator.page);
-                        return operator.page;
+                // 先确认是否生成过
+                if (boldGenerated.get(codepoint)) {
+                    // 2. 高速缓存不存在则遍历所有纹理集
+                    for (PageOperator operator : boldPage) {
+                        if (operator.page.isCharInPage(codepoint)) {
+                            // 缓存一次
+                            boldHighWay.put(codepoint, operator.page);
+                            return operator.page;
+                        }
                     }
                 }
 
-                // 执行到这代表没有找到对应的Page
+                // 没有生成过 或者没有找到page
                 addCharacter(codepoint, type);
                 return null;
+
             }
             default -> {
                 if (normalInGenerate.contains(codepoint)) return null;  // 正在生成
@@ -135,23 +145,29 @@ public class CharacterGenFactory {
                     return page;
                 }
 
-                // 2. 高速缓存不存在则遍历所有纹理集
-                for (PageOperator operator : normalPage) {
-                    if (operator.page.isCharInPage(codepoint)) {
-                        // 缓存一次
-                        normalHighWay.put(codepoint, operator.page);
-                        return operator.page;
+                if (normalGenerated.get(codepoint)) {
+                    // 2. 高速缓存不存在则遍历所有纹理集
+                    for (PageOperator operator : normalPage) {
+                        if (operator.page.isCharInPage(codepoint)) {
+                            // 缓存一次
+                            normalHighWay.put(codepoint, operator.page);
+                            return operator.page;
+                        }
                     }
                 }
 
-                // 执行到这代表没有找到对应的Page
+                // 没有生成过 或者没有找到page
                 addCharacter(codepoint, type);
                 return null;
+
             }
         }
     }
 
     public boolean addCharacter(int codepoint, int type) {
+        // 已经生成好了就不需要Add
+        if (checkInGeneration(codepoint, type)) return true;
+
         switch (type) {
             case EnumFontType.BOLD -> {
                 boldLock.lock();
@@ -190,18 +206,98 @@ public class CharacterGenFactory {
         }
     }
 
-    public void generateDone(int codepoint, int type) {
+    public boolean addCharacter(ImageAndInfo info, int type) {
+        int codepoint = info.info().codepoint();
+        if (checkInGeneration(codepoint, type)) return true;
+
         switch (type) {
             case EnumFontType.BOLD -> {
-                boldInGenerate.remove(codepoint);
+                boldLock.lock();
+                // 没有生成添加
+                try {
+                    checkPool();
+                    for (PageOperator operator : boldPage) {
+                        if (operator.canAdd()) {
+                            boldInGenerate.add(codepoint);
+                            operator.inAdd.set(true);
+                            operator.page.addCharacterTexture(info);
+                            operator.inAdd.set(false);
+                            generateDone(codepoint, EnumFontType.BOLD, operator.page);
+                            return true;
+                        }
+                    }
+                } finally {
+                    boldLock.unlock();
+                }
             }
             default -> {
-                normalInGenerate.remove(codepoint);
+                normalLock.lock();
+                // 没有生成添加
+                try {
+                    checkPool();
+                    for (PageOperator operator : normalPage) {
+                        if (operator.canAdd()) {
+                            normalInGenerate.add(codepoint);
+                            operator.inAdd.set(true);
+                            operator.page.addCharacterTexture(info);
+                            operator.inAdd.set(false);
+                            generateDone(codepoint, EnumFontType.NORMAL, operator.page);
+                            return true;
+                        }
+                    }
+                } finally {
+                    normalLock.unlock();
+                }
+            }
+        }
+        // 添加失败
+        return false;
+    }
+
+    /**
+     * 返回是否正在生成 或者已经生成
+     */
+    public boolean checkInGeneration(int codepoint, int type) {
+        switch (type) {
+            case EnumFontType.BOLD -> {
+                if (boldGenerated.get(codepoint)) {
+                    boldInGenerate.remove(Integer.valueOf(codepoint));
+                    return true;  // 已经生成
+                }
+                else {
+                    return boldInGenerate.contains(codepoint);
+                }
+            }
+            default -> {
+                if (normalGenerated.get(codepoint)) {
+                    normalInGenerate.remove(Integer.valueOf(codepoint));
+                    return true;  // 已经生成
+                }
+                else {
+                    return normalInGenerate.contains(codepoint);
+                }
+            }
+        }
+    }
+
+    public void generateDone(int codepoint, int type, CharacterTexturePage page) {
+        switch (type) {
+            case EnumFontType.BOLD -> {
+                boldInGenerate.remove(Integer.valueOf(codepoint));
+                boldHighWay.put(codepoint, page);
+                boldGenerated.set(codepoint);
+            }
+            default -> {
+                normalInGenerate.remove(Integer.valueOf(codepoint));
+                normalHighWay.put(codepoint, page);
+                normalGenerated.set(codepoint);
             }
         }
     }
 
     public void reset() {
+        normalLock.lock();
+        boldLock.lock();
         fontManager.reload();
         for (PageOperator operator : normalPage) {
             operator.page.dispose();
@@ -209,12 +305,28 @@ public class CharacterGenFactory {
         for (PageOperator operator : boldPage) {
             operator.page.dispose();
         }
+        normalGenerated.clear();
+        boldGenerated.clear();
         normalPage.clear();
         boldPage.clear();
-        normalHighWay = CacheBuilder.newBuilder().maximumSize(10240).build();
-        boldHighWay = CacheBuilder.newBuilder().maximumSize(10240).build();
+        normalHighWay = CacheBuilder.newBuilder().maximumSize(65536).build();
+        boldHighWay = CacheBuilder.newBuilder().maximumSize(65536).build();
         normalInGenerate.clear();
         boldInGenerate.clear();
+        normalLock.unlock();
+        boldLock.unlock();
+    }
+
+    private void debugSaveAllPage() {
+        File saveDir = new File(System.getProperty("user.dir"));
+        for (int i = 0; i < normalPage.size(); i++) {
+            PageOperator operator = normalPage.get(i);
+            operator.page.saveImage(new File(saveDir, "images/normal_"+i+".png"));
+        }
+        for (int i = 0; i < boldPage.size(); i++) {
+            PageOperator operator = boldPage.get(i);
+            operator.page.saveImage(new File(saveDir, "images/bold_"+i+".png"));
+        }
     }
 
 
@@ -222,7 +334,6 @@ public class CharacterGenFactory {
      * 页面操作者
      */
     public static class PageOperator {
-        public static Logger LOG = LogManager.getLogger();
         public final CharacterGenFactory factory;
         public final CharacterTexturePage page;
         public AtomicBoolean inAdd = new AtomicBoolean(false);
@@ -242,7 +353,7 @@ public class CharacterGenFactory {
                     page.addCharacterTexture(imageAndInfo);
                 } finally {
                     inAdd.set(false);
-                    factory.generateDone(codepoint, type);
+                    factory.generateDone(codepoint, type, page);
                 }
             }, "添加字符:【"+character+"】").start();
         }

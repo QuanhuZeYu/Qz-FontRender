@@ -1,18 +1,22 @@
 package club.heiqi.qz_fontrender.fontSystem;
 
+import club.heiqi.qz_fontrender.MyMod;
 import org.joml.Vector2f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
-import org.lwjgl.opengl.GL30;
 
+import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.ImageObserver;
+import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class CharacterTexturePage {
     /**纹理页大小*/
@@ -25,6 +29,8 @@ public class CharacterTexturePage {
     public int textureID;
     /**存储的字符和它的信息*/
     public Map<Integer, CharacterInfo> storage = new HashMap<>();
+    /**添加锁*/
+    public ReentrantLock lock = new ReentrantLock();
 
     /**记录当前可添加位置的左上角坐标 左上角 0,0*/
     public int cX, cY;
@@ -32,8 +38,6 @@ public class CharacterTexturePage {
     public boolean full = false;
     /**标记是否需要更新GL侧纹理*/
     public boolean needUpload = false;
-    /**间断生成Mipmap避免极端卡顿*/
-    public static long lastGenMipmap = System.currentTimeMillis();
 
     /**opengl渲染工具*/
     public static RenderTool renderTool;
@@ -48,60 +52,42 @@ public class CharacterTexturePage {
 
     public void addCharacterTexture(ImageAndInfo imageAndInfo) {
         if (full) return;
-        Graphics2D pageGraphics = image.createGraphics();
-        int cx = cX, cy = cY;
-        pageGraphics.drawImage(imageAndInfo.image(), cX, cY, cWidth, cHeight, (ImageObserver) null);
-        pageGraphics.dispose();
+        lock.lock();
+        try {
+            Graphics2D pageGraphics = image.createGraphics();
+            int cx = cX, cy = cY;
+            pageGraphics.drawImage(imageAndInfo.image(), cX, cY, cWidth, cHeight, (ImageObserver) null);
+            pageGraphics.dispose();
 
-        // 递增坐标
-        cX = cX + cWidth;
-        if (cX >= width) {
-            // 到达最右侧重置到开始并另起一行
-            cX = 0;
-            cY = cY + cHeight;
-            // 如果另起一行的Y在最底部了标记填满
-            if (cY >= height) {
-                full = true;
+            // 递增坐标
+            cX = cX + cWidth;
+            if (cX >= width) {
+                // 到达最右侧重置到开始并另起一行
+                cX = 0;
+                cY = cY + cHeight;
+                // 如果另起一行的Y在最底部了标记填满
+                if (cY >= height) {
+                    full = true;
+                }
             }
+
+            // 缓存记录信息
+            CharacterInfo info = new CharacterInfo(imageAndInfo.info().codepoint(),
+                    cx, cy,
+                    imageAndInfo.info().width(), imageAndInfo.info().height(),
+                    imageAndInfo.info().advanceX(), imageAndInfo.info().advanceY(),
+                    imageAndInfo.info().ascent(), imageAndInfo.info().descent());
+            storage.put(info.codepoint(), info);
+
+            // 标记需要更新GL侧的纹理
+            needUpload = true;
+        } finally {
+            lock.unlock();
         }
+    }
 
-        // 缓存记录信息
-        CharacterInfo info = new CharacterInfo(imageAndInfo.info().codepoint(),
-                cx, cy,
-                imageAndInfo.info().width(), imageAndInfo.info().height(),
-                imageAndInfo.info().advanceX(), imageAndInfo.info().advanceY(),
-                imageAndInfo.info().ascent(), imageAndInfo.info().descent());
-        storage.put(info.codepoint(), info);
-
-        // 标记需要更新GL侧的纹理
-        needUpload = true;
-        // int width1 = imageAndInfo.image().getWidth();
-        // int height1 = imageAndInfo.image().getHeight();
-        // int[] pixels = new int[width1 * height1];
-        // imageAndInfo.image().getRGB(0,0,width1,height1,pixels,0,width1);
-        // ByteBuffer buffer = BufferUtils.createByteBuffer(width1 * height1 * 4);
-        // for (int y = 0; y < width1; y++) {  // 修改这里：y从0递增到height-1
-        //     for (int x = 0; x < height1; x++) {
-        //         int pixel = pixels[y * width1 + x];  // 直接按原顺序访问
-        //         buffer.put((byte) ((pixel >> 16) & 0xFF)); // R
-        //         buffer.put((byte) ((pixel >> 8) & 0xFF));  // G
-        //         buffer.put((byte) (pixel & 0xFF));         // B
-        //         buffer.put((byte) ((pixel >> 24) & 0xFF)); // A
-        //     }
-        // }
-        // buffer.flip();
-        //
-        // GL11.glBindTexture(GL11.GL_TEXTURE_2D, textureID);
-        // // 上传纹理数据
-        // GL11.glTexSubImage2D(
-        //         GL11.GL_TEXTURE_2D,
-        //         0,
-        //         cx, cy,
-        //         width,height,
-        //         GL11.GL_RGBA,
-        //         GL11.GL_UNSIGNED_BYTE,
-        //         buffer
-        // );
+    public CharacterInfo getInfo(int codepoint) {
+        return storage.get(codepoint);
     }
 
     public boolean isCharInPage(int codepoint) {
@@ -109,9 +95,6 @@ public class CharacterTexturePage {
         return info != null;
     }
 
-    public CharacterInfo getInfo(int codepoint) {
-        return storage.get(codepoint);
-    }
 
     /**
      * 将BufferedImage上传到OpenGL中
@@ -174,13 +157,8 @@ public class CharacterTexturePage {
             // );
         }
 
-        // if (System.currentTimeMillis() - lastGenMipmap > 100) {
-        GL30.glGenerateMipmap(GL11.GL_TEXTURE_2D);
-        lastGenMipmap = System.currentTimeMillis();
-        // }
-
         // 设置纹理参数
-        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR_MIPMAP_LINEAR);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_S, GL13.GL_CLAMP_TO_BORDER);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_WRAP_T, GL13.GL_CLAMP_TO_BORDER);
@@ -202,10 +180,11 @@ public class CharacterTexturePage {
 
     public void renderChar(CharacterInfo info, int color, float x, float y, float width, float height, boolean italic) {
         if (needUpload) loadTexture();
-        // if (renderTool == null) {
-        //     renderTool = new RenderTool();
-        //     renderTool.init();
-        // }
+        if (CharacterTexturePage.renderTool == null) {
+            CharacterTexturePage.renderTool = new RenderTool();
+            CharacterTexturePage.renderTool.init();
+        }
+        CharacterTexturePage.renderTool.shaderManager.bind();
 
         float u0 = (float)info.getU0(this.width);
         float u1 = (float)info.getU1(this.width);
@@ -246,9 +225,88 @@ public class CharacterTexturePage {
         // GL11.glEnd();
 
         GL11.glColor4f(floatBuffer.get(0), floatBuffer.get(1), floatBuffer.get(2), floatBuffer.get(3));
+        CharacterTexturePage.renderTool.shaderManager.unbind();
+    }
+
+    /**
+     * 将BufferedImage保存到指定路径文件中
+     */
+    public void saveImage(File savePath) {
+        BufferedImage image = this.image;
+        if (image == null) {
+            // 从GPU中获取该纹理图像
+            try {
+                image = retrieveImageFromGPU();
+            } catch (Exception e) {
+                MyMod.LOG.error("Failed to retrieve texture from GPU: {}", savePath, e);
+                return;
+            }
+        }
+
+        try {
+            // 确保目录存在
+            File parentDir = savePath.getParentFile();
+            if (parentDir != null && !parentDir.exists()) {
+                boolean mkdirs = parentDir.mkdirs();
+            }
+
+            // 获取文件扩展名（自动检测格式）
+            String formatName = getFormatName(savePath);
+
+            // 保存图像（使用PNG作为默认格式）
+            if (formatName != null) {
+                ImageIO.write(image, formatName, savePath);
+            } else {
+                // 如果无法从文件名确定格式，使用PNG格式并添加后缀
+                File pngFile = new File(savePath.getAbsolutePath() + ".png");
+                ImageIO.write(image, "PNG", pngFile);
+            }
+        } catch (IOException e) {
+            MyMod.LOG.error("Failed to save image: {}", savePath, e);
+        } catch (IllegalArgumentException e) {
+            MyMod.LOG.error("Unsupported image format: {}", savePath, e);
+        }
+    }
+
+    // 从GPU纹理中读取图像数据
+    private BufferedImage retrieveImageFromGPU() {
+        // 绑定纹理
+        GL11.glBindTexture(GL11.GL_TEXTURE_2D, textureID);
+
+        // 创建缓冲区来存储纹理数据
+        ByteBuffer buffer = BufferUtils.createByteBuffer(width * height * 4);
+        GL11.glGetTexImage(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, buffer);
+
+        // 创建BufferedImage并填充数据
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int i = (y * width + x) * 4;
+                int r = buffer.get(i) & 0xFF;
+                int g = buffer.get(i + 1) & 0xFF;
+                int b = buffer.get(i + 2) & 0xFF;
+                int a = buffer.get(i + 3) & 0xFF;
+                int argb = (a << 24) | (r << 16) | (g << 8) | b;
+                image.setRGB(x, y, argb);
+            }
+        }
+
+        return image;
+    }
+
+    // 根据文件扩展名获取标准格式名称
+    public String getFormatName(File file) {
+        String name = file.getName().toLowerCase();
+        if (name.endsWith(".png")) return "PNG";
+        if (name.endsWith(".jpg") || name.endsWith(".jpeg")) return "JPEG";
+        if (name.endsWith(".gif")) return "GIF";
+        if (name.endsWith(".bmp")) return "BMP";
+        if (name.endsWith(".wbmp")) return "WBMP";
+        return null;
     }
 
     public void dispose() {
         GL11.glDeleteTextures(textureID);
+        storage.clear();
     }
 }
