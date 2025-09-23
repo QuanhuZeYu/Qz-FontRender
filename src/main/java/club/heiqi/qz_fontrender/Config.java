@@ -14,6 +14,7 @@ public class Config {
     public static Configuration config;
 
     public static boolean guiScaleFix = false;
+    public static boolean backendGeneration = false;
     public static float characterSpacing = 0.1f;
     public static float spaceWidth = ReplaceFontRender.DEFAULT_CHAR_WIDTH/2f;
     public static float shadowOffsetX = 0.5f;
@@ -32,6 +33,8 @@ public class Config {
     }
 
     public void load() {
+        backendGeneration = config.getBoolean("backendGeneration", Configuration.CATEGORY_GENERAL, false, "后台持续生成字符");
+
         guiScaleFix = config.getBoolean("guiScaleFix", Configuration.CATEGORY_GENERAL, false, "GUI缩放修复");
         guiScale = config.getFloat("guiScale", Configuration.CATEGORY_GENERAL, 4.0f, Float.MIN_VALUE, Float.MAX_VALUE, "界面缩放(注意！此值会覆盖原版设定值！)");
 

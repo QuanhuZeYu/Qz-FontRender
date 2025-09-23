@@ -19,6 +19,7 @@ import org.lwjgl.opengl.GL11;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.List;
 
 public class ReplaceFontRender extends FontRenderer {
@@ -37,7 +38,13 @@ public class ReplaceFontRender extends FontRenderer {
         factory = new CharacterGenFactory(fontManager, textureWidth, textureHeight, charWidth, charHeight, maintainPool);
     }
 
-    public void setCharSize(float size) {curCharWidth = size;}
+    @Override
+    public void onResourceManagerReload(IResourceManager p_110549_1_) {
+        factory.reset();
+
+        isLoaded = false;
+        randomSampleWidthList = null;
+    }
 
 
     @Override
@@ -68,52 +75,67 @@ public class ReplaceFontRender extends FontRenderer {
     }
 
     @Override
-    public int getStringWidth(String text) {
+    public int getStringWidth(final String text) {
         float width = 0;
-        if (text == null) return 0;
-        /* String[] splits = text.split("(?=§)");
+        // 1. 以§做分割
+        String[] splits = text.split("(?=§)");
+
+        // =====
+        boolean randomStyle = false;
+        boolean boldStyle = false;
+        boolean strikethroughStyle = false;
+        boolean underlineStyle = false;
+        boolean italicStyle = false;
+        // =====
+
+        // 2. 操作分割后的单元
+        int fontType = EnumFontType.NORMAL;
         for (String split : splits) {
-            // 提取无操作符文字
+            // 2.1 先检查单元中是否有操作符
+            if (split.startsWith("§") && split.length() >= 2) {
+                char controlChar = split.toLowerCase().charAt(1);
+                switch (controlChar) {
+                    case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'o', 'k',
+                         'm', 'n' -> {
+
+                    }
+                    case 'l' -> {
+                        fontType = EnumFontType.BOLD;
+                    }
+                    case 'r' -> {
+                        fontType = EnumFontType.NORMAL;
+                    }
+                    // 任何没有见过的操作符都视作重置！
+                    default -> {
+
+                        fontType = EnumFontType.NORMAL;
+                    }
+                }
+            }
+
+
+            // 2.2 提取剩余无操作符文字
             if (split.startsWith("§") && split.length() <= 2) continue;
             String s = split;
             if (split.startsWith("§")) s = split.substring(2);
-            // 遍历分割单元内的字符
+            // 遍历字符
             for (int i = 0; i < s.length();) {
-                int codepoint = text.codePointAt(i);
+                int codepoint = s.codePointAt(i);
                 int charCountInCodePoint = Character.charCount(codepoint);
                 i += charCountInCodePoint;
 
-                CharacterTexturePage page = factory.getPageOrGenChar(codepoint);
-                // 如果没找到
-                if (page == null) {
+                CharacterTexturePage page = factory.getPageOrGenChar(codepoint, fontType);
+                // 如果没有找到则跳过
+                if (page == null || new String(Character.toChars(codepoint)).equals(" ")) {
                     width += Config.spaceWidth;
                     continue;
                 }
                 CharacterInfo info = page.getInfo(codepoint);
-                width += info.advanceX()/info.width() * this.curCharWidth + Config.characterSpacing;
-            }
-        } */
-        for (int i = 0; i < text.length();) {
-            int codepoint = text.codePointAt(i);
-            char[] chars = Character.toChars(codepoint);
-            int charCount = Character.charCount(codepoint);
-            String s = new String(chars);
+                float charAdvance = info.advanceX();
+                float charWidth = charAdvance / info.width() * this.curCharWidth + Config.characterSpacing;
 
-            // 跳过操作符
-            if (s.equals("§")) {
-                i += 2;
-                continue;
+                width += charWidth;
             }
-
-            CharacterTexturePage page = factory.getPageOrGenChar(codepoint, 0);
-            if (page == null || s.equals(" ")) {
-                width += Config.spaceWidth;
-            } else {
-                CharacterInfo info = page.getInfo(codepoint);
-                width += info.advanceX()/info.width() * this.curCharWidth + Config.characterSpacing;
-            }
-
-            i += charCount;
         }
         return (int) Math.ceil(width);
     }
@@ -156,17 +178,6 @@ public class ReplaceFontRender extends FontRenderer {
     }
 
     @Override
-    public void onResourceManagerReload(IResourceManager p_110549_1_) {
-        factory.reset();
-
-        isPrepare = false;
-        prepareCodepoint = 0x0;
-
-        isLoaded = false;
-        randomSampleWidthList = null;
-    }
-
-    @Override
     public void setBidiFlag(boolean bidiFlag) {
         this.bidiFlag = bidiFlag;
     }
@@ -202,7 +213,7 @@ public class ReplaceFontRender extends FontRenderer {
 
                 CharacterTexturePage page = factory.getPageOrGenChar(codepoint, EnumFontType.NORMAL);
                 // 如果没找到
-                if (page == null) {
+                if (page == null || trueCharacter.equals(" ")) {
                     width += Config.spaceWidth;
                 }
                 else {
@@ -240,7 +251,6 @@ public class ReplaceFontRender extends FontRenderer {
      * o = 斜体
      * r = 重置*/
     private void renderStringAtPos(String s, boolean shadow) {
-        prepareChars();
         loadRandomSampleWidth();
 
         this.curCharWidth = Config.charSize;
@@ -289,11 +299,13 @@ public class ReplaceFontRender extends FontRenderer {
                     }
                     case 'r' -> {
                         this.resetStyles();
+                        fontType = EnumFontType.NORMAL;
                         red = (int) (saveR * 255); green = (int) (saveG * 255); blue = (int) (saveB * 255);
                     }
                     // 任何没有见过的操作符都视作重置！
                     default -> {
                         this.resetStyles();
+                        fontType = EnumFontType.NORMAL;
                         red = (int) (saveR * 255); green = (int) (saveG * 255); blue = (int) (saveB * 255);
                     }
                 }
@@ -314,7 +326,7 @@ public class ReplaceFontRender extends FontRenderer {
 
                 CharacterTexturePage page = factory.getPageOrGenChar(codepoint, fontType);
                 // 如果没有找到则跳过
-                if (page == null) {
+                if (page == null || trueCharacter.equals(" ")) {
                     doDraw(Config.spaceWidth);
                     continue;
                 }
@@ -340,13 +352,11 @@ public class ReplaceFontRender extends FontRenderer {
                         continue;
                     }
                     info = page.getInfo(randomCharCodepoint);
-                    MyMod.LOG.debug("");
                 }
 
                 // ========== 渲染 ==========
                 int color = (((int)(alpha*255)) << 24) | red << 16 | green << 8 | blue;
                 page.renderChar(info, color, posX, posY, this.curCharWidth, this.curCharWidth, this.italicStyle);
-                if (trueCharacter.equals(" ")) charWidth = Config.spaceWidth;
                 // ========== 渲染 ==========
 
                 // 2.2.3 处理下划线等情况
@@ -449,13 +459,8 @@ public class ReplaceFontRender extends FontRenderer {
             //     GL11.glTranslatef(posX * (scale - 1) * 2, posY + FONT_HEIGHT * (scale - 1) * 2, 0);
             // }
 
-            if (CharacterTexturePage.renderTool == null) {
-                CharacterTexturePage.renderTool = new RenderTool();
-                CharacterTexturePage.renderTool.init();
-            }
-            CharacterTexturePage.renderTool.shaderManager.bind();
+
             this.renderStringAtPos(text, shadow);
-            CharacterTexturePage.renderTool.shaderManager.unbind();
 
             // GL11.glAlphaFunc(alphaFunc, alphaRef);
             GL11.glPopAttrib();
@@ -605,24 +610,6 @@ public class ReplaceFontRender extends FontRenderer {
         }
 
         isLoaded = true;
-    }
-
-    private boolean isPrepare = false;
-    private int prepareCodepoint = 0x0;
-    private long lastPrepare = System.currentTimeMillis();
-    private void prepareChars() {
-        if (isPrepare) return;
-        if (System.currentTimeMillis() - lastPrepare < 1000_0) return;
-        lastPrepare = System.currentTimeMillis();
-        int count = 0;
-        while (prepareCodepoint < 0xffff) {
-            if (count >= 500) return;
-            factory.getPageOrGenChar(prepareCodepoint, EnumFontType.NORMAL);
-            count++;
-            prepareCodepoint++;
-        }
-
-        isPrepare = true;
     }
 
     // private int sizeStringToWidth(String text, int wrapWidth) {
