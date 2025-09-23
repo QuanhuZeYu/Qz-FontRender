@@ -20,7 +20,6 @@ public class CharacterImageGenerator {
     public static ImageAndInfo renderCharacter(int codepoint, Font font, int width, int height) {
         char[] chars = Character.toChars(codepoint);
         String character = new String(chars);
-        float fontSize = font.getSize2D();
 
         // 创建临时图像获取字体渲染上下文
         BufferedImage tempImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
@@ -95,8 +94,8 @@ public class CharacterImageGenerator {
         g2d.setColor(Color.WHITE);
 
         // 准确的绘制在左上角
-        float x = (float) 0;
-        float y = (float) -logicalBounds.getY();  // 将图像拉到左上角
+        float x = (float) -visualBounds.getX();
+        float y = (float) (-descent + height);  // 将图像拉到左上角
         g2d.drawString(character, x, y);
 
         // 释放资源并返回图像
@@ -153,4 +152,21 @@ public class CharacterImageGenerator {
         if (name.endsWith(".wbmp")) return "WBMP";
         return null;
     }
+
+    // public static void main(String[] args) {
+    //     FontManager fontManager = new FontManager(64*0.8f);
+    //     File saveDir = new File("images");
+    //     List<Integer> codepoints = Arrays.asList(
+    //             "🙂".codePointAt(0),
+    //             "椁".codePointAt(0),
+    //             "a".codePointAt(0),
+    //             "g".codePointAt(0),
+    //             "`".codePointAt(0)
+    //     );
+    //     codepoints.forEach(codepoint -> {
+    //         File savePath = new File(saveDir, new String(Character.toChars(codepoint)) + ".png");
+    //         ImageAndInfo imageAndInfo = CharacterImageGenerator.renderCharacter(codepoint, fontManager.findSuitable(codepoint, 0), 64, 64);
+    //         CharacterImageGenerator.saveImage(imageAndInfo.image(), savePath);
+    //     });
+    // }
 }
