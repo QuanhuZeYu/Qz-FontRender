@@ -23,3 +23,27 @@
 ---
 
 欢迎贡献代码、提出问题或建议！让我们一起打造更强大的 Minecraft 字体渲染体验。
+
+---
+
+# Qz-FontRender
+
+A high-performance, cross-language font rendering engine with full support for Unicode multi-lingual planes, delivering smooth and diverse font display experiences. Now, easily use Emojis and various special characters in Minecraft!
+
+## Features
+
+- ✅ Full Unicode support, covering the Basic Multilingual Plane (BMP) and additional supplementary planes
+- ✅ Smooth font rendering for high-quality display
+- ✅ Optimized for Minecraft, seamlessly integrating Emojis and special symbols
+- ✅ Cross-language compatibility, supporting characters from Chinese, English, Japanese, Korean, and many other languages
+- ✅ Mixin-free font renderer implementation, achieving theoretically highest-priority rendering
+
+## Usage Instructions
+
+- **Switching Fonts**: You can change the currently used font by adjusting the **order of font files** in the `fonts` folder. After making changes, click the **"Confirm" button on the Resource Pack screen** in the game to reload the fonts and apply the changes.
+
+- **Font Fallback Mechanism**: If a specific font cannot render a certain character, the renderer will automatically attempt to use the next font in the order, ensuring seamless character display compatibility.
+
+---
+
+Contributions, issues, and suggestions are welcome! Let's work together to build a more powerful Minecraft font rendering experience.
