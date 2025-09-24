@@ -94,7 +94,7 @@ public class CharacterImageGenerator {
         g2d.setColor(Color.WHITE);
 
         // 准确的绘制在左上角
-        float x = (float) -visualBounds.getX();
+        float x = (float) 0;
         float y = (float) (-descent + height);  // 将图像拉到左上角
         g2d.drawString(character, x, y);
 

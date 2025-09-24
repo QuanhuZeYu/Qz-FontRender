@@ -13,4 +13,5 @@ dependencies {
     runtimeOnly("com.github.GTNewHorizons:NotEnoughItems:2.7.88-GTNH:dev")
     runtimeOnly("com.github.GTNewHorizons:Angelica:1.0.0-beta56:dev")
     runtimeOnly("com.github.GTNewHorizons:Applied-Energistics-2-Unofficial:rv3-beta-688-GTNH:dev")
+    runtimeOnly("com.github.GTNewHorizons:AppleCore:3.3.7:dev")
 }
