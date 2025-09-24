@@ -5,42 +5,81 @@ out vec4 fragColor;
 
 uniform vec4 color;
 uniform sampler2D SamTex;
-uniform float boldAmount = 0.0;
-uniform vec2 textureSize;
+uniform float edgeWidth = 0.2;
+uniform vec2 texturesize;
+uniform vec4 uvBounds;
+uniform float gain = 1.5;
+uniform int sampleRadius = 1; // 采样半径
 
-void main(void) {
-    vec2 pixelSize = 1.0 / textureSize;
+// 安全采样函数
+vec4 safeSample(vec2 offset) {
+    vec2 newCoord = vec2(texCoord + offset);
+    if (newCoord.x <= uvBounds.x || newCoord.x >= uvBounds.z ||
+    newCoord.y <= uvBounds.y || newCoord.y >= uvBounds.w) {
+        return vec4(0);
+    }
+    return texture(SamTex, newCoord);
+}
 
-    vec4 texColor = texture(SamTex, texCoord);
+// 高斯模糊采样函数
+vec4 gaussianBlurSample(int radius) {
+    vec2 texelSize = vec2(1.0) / texturesize;
+    vec4 result = vec4(0.0);
+    float totalWeight = 0.0;
 
-    vec4 blendedColor = texColor * color;
+    // 限制半径范围
+    radius = clamp(radius, 1, 10);
 
-    float adaptiveScale = max(1.0, 10.0 / min(textureSize.x, textureSize.y));
-    float adjustedBoldAmount = boldAmount * adaptiveScale;
+    // 计算高斯核
+    int kernelSize = radius * 2 + 1;
+    float sigma = float(radius) / 2.0;
+    float twoSigma2 = 2.0 * sigma * sigma;
 
-    vec4 maxColor = blendedColor;
+    // 遍历采样点
+    for (int y = -radius; y <= radius; y++) {
+        for (int x = -radius; x <= radius; x++) {
+            // 计算高斯权重
+            float weight = exp(-(float(x*x + y*y)) / twoSigma2);
+            totalWeight += weight;
 
-    int sampleCount = int(clamp(8.0 * adaptiveScale, 8.0, 16.0));
-
-    for (int i = 0; i < 16; i++) {
-        if (i >= sampleCount) break;
-
-        float angle = 6.28318530718 * float(i) / float(sampleCount);
-        vec2 offset = vec2(cos(angle), sin(angle)) * adjustedBoldAmount;
-
-        vec4 sampleColor = texture(SamTex, texCoord + offset * pixelSize) * color;
-        maxColor = max(maxColor, sampleColor);
+            // 采样并累加
+            vec2 offset = vec2(x, y) * texelSize;
+            result += safeSample(offset) * weight;
+        }
     }
 
-    vec4 hSample = texture(SamTex, texCoord + vec2(adjustedBoldAmount * pixelSize.x, 0)) * color;
-    vec4 vSample = texture(SamTex, texCoord + vec2(0, adjustedBoldAmount * pixelSize.y)) * color;
-    maxColor = max(maxColor, hSample);
-    maxColor = max(maxColor, vSample);
+    // 归一化
+    if (totalWeight > 0.0) {
+        result /= totalWeight;
+    }
 
-    float alpha = maxColor.a;
-    float smoothRange = 0.05 + 0.02 * max(adjustedBoldAmount, 0.5);
+    return result;
+}
 
-    alpha = smoothstep(0.5 - smoothRange, 0.5 + smoothRange, alpha);
+void main() {
+    // 获取中心采样点颜色
+    vec4 centerSample = safeSample(vec2(0));
 
-    fragColor = vec4(maxColor.rgb, alpha);
+    // 检查中心颜色是否大于 vec3(0.2)
+    if (centerSample.r > 0.2 || centerSample.g > 0.2 || centerSample.b > 0.2) {
+        // 不应用模糊，使用中心采样点的颜色并应用增益
+        vec3 enhancedColor = centerSample.rgb * gain;
+        fragColor = vec4(color.rgb * clamp(enhancedColor, 0.0, 1.0), 1.0);
+        return;
+    }
+
+    // 使用高斯模糊采样
+    vec4 blurredSample = gaussianBlurSample(sampleRadius);
+
+    // 应用增益并限制在有效范围内
+    vec3 texColor = clamp(blurredSample.rgb * gain, 0.0, 1.0);
+
+    // 应用文本颜色
+    vec3 finalColor = texColor * color.rgb;
+
+    // 使用平滑步进函数实现抗锯齿
+    float smoothedAlpha = smoothstep(0.5 - edgeWidth, 0.5 + edgeWidth, blurredSample.a);
+
+    // 输出最终颜色
+    fragColor = vec4(finalColor, smoothedAlpha);
 }
