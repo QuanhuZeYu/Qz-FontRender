@@ -10,6 +10,7 @@ uniform vec4 color;                     // 基础颜色，用于与纹理颜色�
 uniform sampler2D SamTex;               // 2D纹理采样器
 uniform vec2 textureSize;               // 纹理的尺寸（宽度和高度），修正拼写
 uniform vec2 smoothRange = vec2(0.05, 0.5);  // 平滑范围，用于smoothstep
+uniform vec4 uvBounds = vec4(0, 1, 0, 1);
 
 // 新增的可配置uniforms
 uniform float internalAlphaThreshold = 0.9;  // 内部实心区域的alpha阈值
@@ -18,6 +19,14 @@ uniform int sampleOffset = 1;                // 采样次数计算中的偏移�
 uniform int minSamplesPerAxis = 3;           // 每个轴的最小采样次数
 uniform int maxSamplesPerAxis = 8;           // 每个轴的最大采样次数
 uniform float coverageEpsilon = 0.0001;      // 覆盖度除零避免的epsilon值
+
+
+vec4 safeSampler(vec2 uv) {
+    if (uv.x < uvBounds.x || uv.x > uvBounds.y || uv.y < uvBounds.z || uv.y > uvBounds.w) {
+        return vec4(0);  // 超出边界
+    }
+    return texture(SamTex, uv);
+}
 
 void main () {
     // 计算当前片元纹理坐标在屏幕空间中的变化率（导数）
@@ -69,7 +78,7 @@ void main () {
             vec2 sample_uv = start_uv + offset;
 
             // 采样纹理
-            vec4 samp = texture(SamTex, sample_uv);
+            vec4 samp = safeSampler(sample_uv);
 
             // 对每个采样的alpha应用smoothstep，计算覆盖度（这比平均后smoothstep质量更高）
             float coverage = smoothstep(smoothRange.x, smoothRange.y, samp.a);
