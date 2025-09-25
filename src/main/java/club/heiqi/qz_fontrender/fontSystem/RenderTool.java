@@ -55,10 +55,10 @@ public class RenderTool {
         }
     }
 
-    public void render(float[] vertex, float[] uv, int[] index, int color, Vector2f textureSize) {
+    public void render(float[] vertex, float[] uv, int[] index, int color, Vector2f textureSize, Vector4f uvInfo) {
         GL11.glDisable(GL11.GL_BLEND);
         // shaderManager.bind();
-        setUniform(color, textureSize);
+        setUniform(color, textureSize, uvInfo);
 
         GL30.glBindVertexArray(vao);
 
@@ -96,7 +96,7 @@ public class RenderTool {
 
     private final FloatBuffer modelView = BufferUtils.createFloatBuffer(16);
     private final FloatBuffer projection = BufferUtils.createFloatBuffer(16);
-    public void setUniform(int color, Vector2f textureSize) {
+    public void setUniform(int color, Vector2f textureSize, Vector4f uvInfo) {
         modelView.clear(); projection.clear();
         GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, modelView);
         GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, projection);
@@ -110,11 +110,18 @@ public class RenderTool {
         Minecraft mc = Minecraft.getMinecraft();
         ScaledResolution resolution = new ScaledResolution(mc, mc.displayWidth, mc.displayHeight);
 
-        shaderManager.setUniformVec4("color", new Vector4f(red, green, blue, alpha));
-        shaderManager.setUniformVec2("textureSize", textureSize);
-        // shaderManager.setUniformVec2("screenSize", new Vector2f(resolution.getScaledWidth(), resolution.getScaledHeight()));
         shaderManager.setUniformM4f("modelview", new Matrix4f(modelView));
         shaderManager.setUniformM4f("projection", new Matrix4f(projection));
-        shaderManager.setUniformF("boldAmount", Config.boldAmount);
+        shaderManager.setUniformVec4("color", new Vector4f(red, green, blue, alpha));
+
+        shaderManager.setUniformVec2("textureSize", textureSize);
+        shaderManager.setUniformVec2("smoothRange", new Vector2f(Config.smoothRangeMin, Config.smoothRangeMax));
+
+        shaderManager.setUniformF("internalAlphaThreshold", Config.internalAlphaThreshold);
+        shaderManager.setUniformF("sampleMultiplier", Config.sampleMultiplier);
+        shaderManager.setUniformF("coverageEpsilon", Config.coverageEpsilon);
+        shaderManager.setUniformI("sampleOffset", Config.sampleOffset);
+        shaderManager.setUniformI("minSamplesPerAxis", Config.minSamplesPerAxis);
+        shaderManager.setUniformI("maxSamplesPerAxis", Config.maxSamplesPerAxis);
     }
 }

@@ -187,6 +187,6 @@ public class FontManager {
     public void reload() {
         fonts.clear();
         loadAssetsFontsTTF();
-        loadInstalledFontsTTF();
+        // loadInstalledFontsTTF();
     }
 }

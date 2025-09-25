@@ -13,16 +13,23 @@ public class Config {
     public static String configPath;
     public static Configuration config;
 
-    public static boolean guiScaleFix = false;
-    public static boolean backendGeneration = false;
-    public static float characterSpacing = 0.1f;
-    public static float spaceWidth = ReplaceFontRender.DEFAULT_CHAR_WIDTH/2f;
-    public static float shadowOffsetX = 0.5f;
-    public static float shadowOffsetY = 0.5f;
-    public static float charSize = 8.5f;
-    public static float lineSpacing = 1.0f;
-    public static float guiScale = 4.0f;
-    public static float boldAmount = 0.005f;
+    public static boolean guiScaleFix;
+    public static boolean backendGeneration;
+
+
+    public static int sampleOffset, minSamplesPerAxis, maxSamplesPerAxis;
+
+
+    public static float characterSpacing;
+    public static float spaceWidth;
+    public static float shadowOffsetX;
+    public static float shadowOffsetY;
+    public static float charSize;
+    public static float lineSpacing;
+
+    public static float guiScale;
+    public static float smoothRangeMin, smoothRangeMax;
+    public static float internalAlphaThreshold, sampleMultiplier, coverageEpsilon;
 
     public void init(File configFile) {
         if (config == null) {
@@ -33,18 +40,27 @@ public class Config {
     }
 
     public void load() {
-        backendGeneration = config.getBoolean("backendGeneration", Configuration.CATEGORY_GENERAL, false, "后台持续生成字符");
-
+        backendGeneration = config.getBoolean("backendGeneration", Configuration.CATEGORY_GENERAL, true, "后台持续生成字符");
         guiScaleFix = config.getBoolean("guiScaleFix", Configuration.CATEGORY_GENERAL, false, "GUI缩放修复");
-        guiScale = config.getFloat("guiScale", Configuration.CATEGORY_GENERAL, 4.0f, Float.MIN_VALUE, Float.MAX_VALUE, "界面缩放(注意！此值会覆盖原版设定值！)");
 
+
+        sampleOffset = config.getInt("sampleOffset", Configuration.CATEGORY_GENERAL, 1, 1, 2, "采样计算中的偏移量");
+        minSamplesPerAxis = config.getInt("minSamplesPerAxis", Configuration.CATEGORY_GENERAL, 3, 1, 10, "每个轴最小采样次数");
+        maxSamplesPerAxis = config.getInt("maxSamplesPerAxis", Configuration.CATEGORY_GENERAL, 8, 1, 10, "每个轴最大采样次数");
+
+
+        guiScale = config.getFloat("guiScale", Configuration.CATEGORY_GENERAL, 4.0f, Float.MIN_VALUE, Float.MAX_VALUE, "界面缩放(注意！此值会覆盖原版设定值！)");
         characterSpacing = config.getFloat("characterSpacing", Configuration.CATEGORY_GENERAL, 0.1f, Float.MIN_VALUE, Float.MAX_VALUE, "字间距");
         spaceWidth = config.getFloat("spaceWidth", Configuration.CATEGORY_GENERAL, ReplaceFontRender.DEFAULT_CHAR_WIDTH/2f, Float.MIN_VALUE, Float.MAX_VALUE, "空格宽度");
-        shadowOffsetX = config.getFloat("shadowOffsetX", Configuration.CATEGORY_GENERAL, -0.5f, -Float.MAX_VALUE, Float.MAX_VALUE, "投影位置偏移X");
-        shadowOffsetY = config.getFloat("shadowOffsetY", Configuration.CATEGORY_GENERAL, -0.5f, -Float.MAX_VALUE, Float.MAX_VALUE, "投影位置偏移Y");
-        charSize = config.getFloat("charSize", Configuration.CATEGORY_GENERAL, 8.5f, -Float.MAX_VALUE, Float.MAX_VALUE, "字体大小");
+        shadowOffsetX = config.getFloat("shadowOffsetX", Configuration.CATEGORY_GENERAL, 0.5f, -Float.MAX_VALUE, Float.MAX_VALUE, "投影位置偏移X");
+        shadowOffsetY = config.getFloat("shadowOffsetY", Configuration.CATEGORY_GENERAL, 0.5f, -Float.MAX_VALUE, Float.MAX_VALUE, "投影位置偏移Y");
+        charSize = config.getFloat("charSize", Configuration.CATEGORY_GENERAL, 9f, -Float.MAX_VALUE, Float.MAX_VALUE, "字体大小");
         lineSpacing = config.getFloat("lineSpacing", Configuration.CATEGORY_GENERAL, 1.0f, -Float.MAX_VALUE, Float.MAX_VALUE, "行间距");
-        boldAmount = config.getFloat("boldAmount", Configuration.CATEGORY_GENERAL, 0.005f, -Float.MAX_VALUE, Float.MAX_VALUE, "字符加粗");
+        smoothRangeMin = config.getFloat("smoothRangeMin", Configuration.CATEGORY_GENERAL, 0.05f, 0.0f, 1.0f, "平滑范围(控制alpha平滑区间)");
+        smoothRangeMax = config.getFloat("smoothRangeMax", Configuration.CATEGORY_GENERAL, 0.5f, 0.0f, 1.0f, "平滑范围(控制alpha平滑区间)");
+        internalAlphaThreshold = config.getFloat("internalAlphaThreshold", Configuration.CATEGORY_GENERAL, 0.9f, 0.0f, 1.0f, "字符内部实心却与的alpha判断阈值");
+        sampleMultiplier = config.getFloat("sampleMultiplier", Configuration.CATEGORY_GENERAL, 0.5f, 0.0f, 1.0f, "采样次数计算中的乘法因子");
+        coverageEpsilon = config.getFloat("coverageEpsilon", Configuration.CATEGORY_GENERAL, 0.5f, 0.0f, 1.0f, "覆盖度除零避免的Epsilon值");
 
         if (config.hasChanged()) {
             config.save();

@@ -2,9 +2,11 @@ package club.heiqi.qz_fontrender.fontSystem;
 
 import club.heiqi.qz_fontrender.MyMod;
 import org.joml.Vector2f;
+import org.joml.Vector4f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
+import org.lwjgl.opengl.GL30;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -157,6 +159,8 @@ public class CharacterTexturePage {
             // );
         }
 
+        // GL30.glGenerateMipmap(GL11.GL_TEXTURE_2D);
+
         // 设置纹理参数
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_LINEAR);
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
@@ -211,7 +215,7 @@ public class CharacterTexturePage {
                 0,1,2, 2,3,0
         };
 
-        renderTool.render(vertex, uv, index, color, new Vector2f(width, height));
+        renderTool.render(vertex, uv, index, color, new Vector2f(this.width, this.height), new Vector4f(u0, v0, u1, v1));
 
         // GL11.glBegin(GL11.GL_QUADS);
         // GL11.glTexCoord2d(u0, v0);
