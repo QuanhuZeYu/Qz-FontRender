@@ -55,7 +55,8 @@ public class FontManager {
         File fontDir = new File(System.getProperty("user.dir"), "fonts");
 
         List<String> jarList = Arrays.asList(
-                "fonts/10_NotoSerifCJKsc-VF.ttf",
+                "fonts/10_msyh.ttc",
+                "fonts/10_msyhbd.ttc",
                 "fonts/11_seguiemj.ttf",
                 "fonts/12_segmdl2.ttf",
                 "fonts/12_SegoeIcons.ttf",
