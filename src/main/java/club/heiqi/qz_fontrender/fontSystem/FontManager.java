@@ -131,10 +131,11 @@ public class FontManager {
 
         File[] fontFiles = fontDir.listFiles((dir, name) ->
                 name.toLowerCase().endsWith(".ttf") ||
-                name.toLowerCase().endsWith(".otf") ||
-                name.toLowerCase().endsWith(".ttc"));
+                        name.toLowerCase().endsWith(".otf") ||
+                        name.toLowerCase().endsWith(".ttc"));
 
         if (fontFiles != null) {
+            sortFont(fontFiles); // 先排序再加载
             loadTTF(fontFiles);
         }
     }
@@ -188,5 +189,68 @@ public class FontManager {
         fonts.clear();
         loadAssetsFontsTTF();
         // loadInstalledFontsTTF();
+    }
+
+    /**
+     * 字体文件按照名称排序
+     * 优先按数字前缀排序，其次按字母顺序排序
+     */
+    public void sortFont(File[] files) {
+        Arrays.sort(files, (f1, f2) -> {
+            String name1 = f1.getName();
+            String name2 = f2.getName();
+
+            // 提取文件名中的数字前缀
+            Integer num1 = extractLeadingNumber(name1);
+            Integer num2 = extractLeadingNumber(name2);
+
+            // 如果都有数字前缀，按数字大小排序
+            if (num1 != null && num2 != null) {
+                int numCompare = Integer.compare(num1, num2);
+                if (numCompare != 0) {
+                    return numCompare;
+                }
+            }
+            // 如果只有一个有数字前缀，有数字的排在前面
+            else if (num1 != null) {
+                return -1;
+            } else if (num2 != null) {
+                return 1;
+            }
+
+            // 如果都没有数字前缀或数字相同，按字母顺序排序
+            return name1.compareToIgnoreCase(name2);
+        });
+    }
+
+    /**
+     * 从文件名中提取开头的数字部分
+     */
+    private Integer extractLeadingNumber(String fileName) {
+        StringBuilder numbers = new StringBuilder();
+
+        // 遍历文件名开头的数字字符
+        for (int i = 0; i < fileName.length(); i++) {
+            char c = fileName.charAt(i);
+            if (Character.isDigit(c)) {
+                numbers.append(c);
+            } else if (numbers.length() > 0) {
+                // 遇到非数字字符且已有数字，停止提取
+                break;
+            }
+        }
+
+        // 如果有数字部分，转换为整数
+        if (numbers.length() > 0) {
+            try {
+                return Integer.parseInt(numbers.toString());
+            } catch (NumberFormatException e) {
+                // 数字格式异常，返回null
+                return null;
+            }
+        }
+
+        // 没有数字部分
+        return null;
     }
 }
