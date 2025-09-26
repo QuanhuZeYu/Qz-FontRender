@@ -11,6 +11,7 @@ uniform float internalAlphaThreshold = 0.99;
 uniform float blackThreshold = 0.5;
 uniform float blurRadius = 4.0;
 uniform vec2 smoothRange = vec2(0.1, 0.5);
+uniform int smoothSwitcher = 0;
 
 bool isBlack(vec3 color) {
     return (color.r < blackThreshold && color.g < blackThreshold && color.b < blackThreshold);
@@ -74,7 +75,9 @@ void main() {
         gaussianSample.rgb = vec3(1);
     }
 
-    gaussianSample = smoothstep(vec4(smoothRange.x), vec4(smoothRange.y), gaussianSample);
+    if (smoothSwitcher > 0) {
+        gaussianSample = smoothstep(vec4(smoothRange.x), vec4(smoothRange.y), gaussianSample);
+    }
 
     fragColor = vec4(gaussianSample.rgb * color.rgb, gaussianSample.a);
 }

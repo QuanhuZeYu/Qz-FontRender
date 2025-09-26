@@ -13,9 +13,7 @@ public class Config {
     public static String configPath;
     public static Configuration config;
 
-    public static boolean guiScaleFix;
-    public static boolean backendGeneration;
-    public static boolean prepareTipRender;
+    public static boolean guiScaleFix, backendGeneration, prepareTipRender, smoothSwitcher;
 
 
     public static int sampleOffset, minSamplesPerAxis, maxSamplesPerAxis;
@@ -44,6 +42,7 @@ public class Config {
         backendGeneration = config.getBoolean("backendGeneration", Configuration.CATEGORY_GENERAL, true, "后台持续生成字符");
         guiScaleFix = config.getBoolean("guiScaleFix", Configuration.CATEGORY_GENERAL, false, "GUI缩放修复");
         prepareTipRender = config.getBoolean("prepareTipRender", Configuration.CATEGORY_GENERAL, true, "准备字体提示信息渲染");
+        smoothSwitcher = config.getBoolean("smoothSwitcher", Configuration.CATEGORY_GENERAL, false, "是否使用平滑功能(比较难用-需要手动调整smoothRange Min/Max)");
 
 
         sampleOffset = config.getInt("sampleOffset", Configuration.CATEGORY_GENERAL, 1, 1, 10, "采样计算中的偏移量");
@@ -62,7 +61,7 @@ public class Config {
         smoothRangeMax = config.getFloat("smoothRangeMax", Configuration.CATEGORY_GENERAL, 0.8f, 0.0f, 1.0f, "平滑范围(控制alpha平滑区间)");
         internalAlphaThreshold = config.getFloat("internalAlphaThreshold", Configuration.CATEGORY_GENERAL, 0.99f, 0.0f, 1.0f, "字符内部实心却与的alpha判断阈值");
         blackThreshold = config.getFloat("blackThreshold", Configuration.CATEGORY_GENERAL, 0.3f, 0.0f, 1.0f, "判定黑色阈值");
-        blurRadius = config.getFloat("blurRadius", Configuration.CATEGORY_GENERAL, 4.0f, 0.0f, 64.0f, "模糊程度");
+        blurRadius = config.getFloat("blurRadius", Configuration.CATEGORY_GENERAL, 1.0f, 0.0f, 64.0f, "模糊程度");
 
         if (config.hasChanged()) {
             config.save();
