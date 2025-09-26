@@ -118,7 +118,6 @@ public class RenderTool {
 
         shaderManager.setUniformF("internalAlphaThreshold", Config.internalAlphaThreshold);
         shaderManager.setUniformF("blurRadius", Config.blurRadius);
-        shaderManager.setUniformF("boldStrength", Config.boldStrength);
         shaderManager.setUniformVec2("smoothRange", new Vector2f(Config.smoothRangeMin, Config.smoothRangeMax));
         // shaderManager.setUniformF("sampleMultiplier", Config.sampleMultiplier);
         // shaderManager.setUniformF("coverageEpsilon", Config.coverageEpsilon);

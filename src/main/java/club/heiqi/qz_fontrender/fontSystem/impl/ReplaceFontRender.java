@@ -14,10 +14,16 @@ import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.settings.GameSettings;
 import net.minecraft.util.ResourceLocation;
+import org.joml.Vector3d;
+import org.joml.Vector3f;
+import org.joml.Vector4f;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.FloatBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
@@ -327,9 +333,10 @@ public class ReplaceFontRender extends FontRenderer {
                 final String trueCharacter = new String(chars);
 
                 CharacterTexturePage page = factory.getPageOrGenChar(codepoint, fontType);
+                LineInfo lineInfo = new LineInfo().collectCurrentColor();
                 // 如果没有找到则跳过
                 if (page == null || trueCharacter.equals(" ")) {
-                    doDraw(Config.spaceWidth);
+                    collectDraw(Config.spaceWidth, lineInfo);
                     continue;
                 }
                 CharacterInfo info = page.getInfo(codepoint);
@@ -350,7 +357,7 @@ public class ReplaceFontRender extends FontRenderer {
                     page = factory.getPageOrGenChar(randomCharCodepoint, EnumFontType.NORMAL);
                     // 如果没有找到则跳过
                     if (page == null) {
-                        doDraw(Config.spaceWidth);
+                        collectDraw(Config.spaceWidth, lineInfo);
                         continue;
                     }
                     info = page.getInfo(randomCharCodepoint);
@@ -362,38 +369,68 @@ public class ReplaceFontRender extends FontRenderer {
                 // ========== 渲染 ==========
 
                 // 2.2.3 处理下划线等情况
-                doDraw(charWidth);
+                collectDraw(charWidth, lineInfo);
             }
         }
     }
 
-    protected void doDraw(float width) {
-        if (this.underlineStyle) {
+    public static class LineInfo {
+        public ArrayList<Vector3d> lineVertex = new ArrayList<>();
+        public Vector4f lineColor = new Vector4f();
+
+        public LineInfo collectCurrentColor() {
+            FloatBuffer buffer = BufferUtils.createFloatBuffer(16);
+            GL11.glGetFloat(GL11.GL_CURRENT_COLOR, buffer);
+            lineColor.x = buffer.get(0);
+            lineColor.y = buffer.get(1);
+            lineColor.z = buffer.get(2);
+            lineColor.w = buffer.get(3);
+            return this;
+        }
+
+        public void draw() {
+            GL11.glColor4f(lineColor.x, lineColor.y, lineColor.z, lineColor.w);
             GL11.glDisable(GL11.GL_TEXTURE_2D);
             GL11.glBegin(GL11.GL_QUADS);
 
-            GL11.glVertex3d((this.posX), (this.posY + this.curCharWidth), 0.0d);
-            GL11.glVertex3d((this.posX + width), (this.posY + this.curCharWidth), 0.0d);
-            GL11.glVertex3d((this.posX + width), (this.posY + this.curCharWidth - 1.0d), 0.0d);
-            GL11.glVertex3d((this.posX), (this.posY + this.curCharWidth - 1.0d), 0.0d);
+            for (Vector3d vertex : lineVertex) {
+                GL11.glVertex3d(vertex.x, vertex.y, vertex.z);
+            }
 
             GL11.glEnd();
             GL11.glEnable(GL11.GL_TEXTURE_2D);
         }
+
+        public LineInfo addVertex(Vector3d v) {
+            lineVertex.add(v);
+            return this;
+        }
+    }
+    public ArrayList<LineInfo> lineInfos = new ArrayList<>();
+    private void collectDraw(float width, LineInfo lineInfo) {
+        if (this.underlineStyle) {
+            lineInfo.addVertex(new Vector3d((this.posX), (this.posY + this.curCharWidth), 0.0d))
+                    .addVertex(new Vector3d((this.posX + width), (this.posY + this.curCharWidth), 0.0d))
+                    .addVertex(new Vector3d((this.posX + width), (this.posY + this.curCharWidth - 1.0d), 0.0d))
+                    .addVertex(new Vector3d((this.posX), (this.posY + this.curCharWidth - 1.0d), 0.0d));
+            lineInfos.add(lineInfo);
+        }
         if (this.strikethroughStyle) {
-            GL11.glDisable(GL11.GL_TEXTURE_2D);
-            GL11.glBegin(GL11.GL_QUADS);
-
-            GL11.glVertex3d((this.posX), this.posY + (this.curCharWidth / 2) + 1, 0.0d);
-            GL11.glVertex3d((this.posX + width), this.posY + (this.curCharWidth / 2) + 1, 0.0d);
-            GL11.glVertex3d((this.posX + width), this.posY + (this.curCharWidth / 2), 0.0d);
-            GL11.glVertex3d((this.posX), this.posY + (this.curCharWidth / 2), 0.0d);
-
-            GL11.glEnd();
-            GL11.glEnable(GL11.GL_TEXTURE_2D);
+            lineInfo.addVertex(new Vector3d((this.posX), this.posY + (this.curCharWidth / 2) + 1, 0.0d))
+                    .addVertex(new Vector3d((this.posX + width), this.posY + (this.curCharWidth / 2) + 1, 0.0d))
+                    .addVertex(new Vector3d(new Vector3d((this.posX + width), (this.posY + this.curCharWidth - 1.0d), 0.0d)))
+                    .addVertex(new Vector3d(new Vector3d((this.posX), (this.posY + this.curCharWidth - 1.0d), 0.0d)));
+            lineInfos.add(lineInfo);
         }
 
         this.posX += width;
+    }
+
+    public void drawCollect() {
+        for (LineInfo lineInfo : lineInfos) {
+            lineInfo.draw();
+        }
+        lineInfos.clear();
     }
 
     private void resetStyles() {
@@ -449,27 +486,23 @@ public class ReplaceFontRender extends FontRenderer {
 
             GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
             GL11.glDisable(GL11.GL_LIGHTING);
-            // int alphaFunc = GL11.glGetInteger(GL11.GL_ALPHA_TEST_FUNC);
-            // float alphaRef = GL11.glGetFloat(GL11.GL_ALPHA_TEST_REF);
-            // 启用 Alpha 测试并设置函数和阈值
             GL11.glEnable(GL11.GL_ALPHA_TEST);
-            // GL11.glAlphaFunc(GL11.GL_GREATER, 0.3f);
-            // float scale = GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX);
-            // if (scale < 1.0 && Config.guiScaleFix) {
-            //     GL11.glPushMatrix();
-            //     GL11.glScalef(1/scale, 1/scale, 1/scale);
-            //     GL11.glTranslatef(posX * (scale - 1) * 2, posY + FONT_HEIGHT * (scale - 1) * 2, 0);
-            // }
+
+            if (CharacterTexturePage.renderTool == null) {
+                CharacterTexturePage.renderTool = new RenderTool();
+                CharacterTexturePage.renderTool.init();
+            }
+            CharacterTexturePage.renderTool.shaderManager.bind();
 
 
             this.renderStringAtPos(text, shadow);
 
-            // GL11.glAlphaFunc(alphaFunc, alphaRef);
-            GL11.glPopAttrib();
-            // if (scale < 1.0 && Config.guiScaleFix) {
-            //     GL11.glPopMatrix();
-            // }
 
+            CharacterTexturePage.renderTool.shaderManager.unbind();
+
+            drawCollect();
+
+            GL11.glPopAttrib();
 
             return (int)Math.ceil(this.posX);
         }

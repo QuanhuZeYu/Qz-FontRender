@@ -15,6 +15,7 @@ public class Config {
 
     public static boolean guiScaleFix;
     public static boolean backendGeneration;
+    public static boolean prepareTipRender;
 
 
     public static int sampleOffset, minSamplesPerAxis, maxSamplesPerAxis;
@@ -42,6 +43,7 @@ public class Config {
     public void load() {
         backendGeneration = config.getBoolean("backendGeneration", Configuration.CATEGORY_GENERAL, true, "后台持续生成字符");
         guiScaleFix = config.getBoolean("guiScaleFix", Configuration.CATEGORY_GENERAL, false, "GUI缩放修复");
+        prepareTipRender = config.getBoolean("prepareTipRender", Configuration.CATEGORY_GENERAL, true, "准备字体提示信息渲染");
 
 
         sampleOffset = config.getInt("sampleOffset", Configuration.CATEGORY_GENERAL, 1, 1, 10, "采样计算中的偏移量");

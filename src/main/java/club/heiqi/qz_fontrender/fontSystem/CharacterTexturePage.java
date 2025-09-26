@@ -184,11 +184,6 @@ public class CharacterTexturePage {
 
     public void renderChar(CharacterInfo info, int color, float x, float y, float width, float height, boolean italic) {
         if (needUpload) loadTexture();
-        if (CharacterTexturePage.renderTool == null) {
-            CharacterTexturePage.renderTool = new RenderTool();
-            CharacterTexturePage.renderTool.init();
-        }
-        CharacterTexturePage.renderTool.shaderManager.bind();
 
         float u0 = (float)info.getU0(this.width);
         float u1 = (float)info.getU1(this.width);
@@ -229,7 +224,6 @@ public class CharacterTexturePage {
         // GL11.glEnd();
 
         GL11.glColor4f(floatBuffer.get(0), floatBuffer.get(1), floatBuffer.get(2), floatBuffer.get(3));
-        CharacterTexturePage.renderTool.shaderManager.unbind();
     }
 
     /**
