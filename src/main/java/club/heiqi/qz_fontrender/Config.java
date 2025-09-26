@@ -29,7 +29,7 @@ public class Config {
 
     public static float guiScale;
     public static float smoothRangeMin, smoothRangeMax;
-    public static float internalAlphaThreshold, sampleMultiplier, coverageEpsilon, aa_strength, strength, sigma, blackThreshold;
+    public static float internalAlphaThreshold, blackThreshold, blurRadius;
 
     public void init(File configFile) {
         if (config == null) {
@@ -59,12 +59,8 @@ public class Config {
         smoothRangeMin = config.getFloat("smoothRangeMin", Configuration.CATEGORY_GENERAL, 0.2f, 0.0f, 1.0f, "平滑范围(控制alpha平滑区间)");
         smoothRangeMax = config.getFloat("smoothRangeMax", Configuration.CATEGORY_GENERAL, 0.8f, 0.0f, 1.0f, "平滑范围(控制alpha平滑区间)");
         internalAlphaThreshold = config.getFloat("internalAlphaThreshold", Configuration.CATEGORY_GENERAL, 0.99f, 0.0f, 1.0f, "字符内部实心却与的alpha判断阈值");
-        sampleMultiplier = config.getFloat("sampleMultiplier", Configuration.CATEGORY_GENERAL, 1.5f, 0.0f, 1.0f, "采样次数计算中的乘法因子");
-        coverageEpsilon = config.getFloat("coverageEpsilon", Configuration.CATEGORY_GENERAL, 0.0001f, 0.0f, 1.0f, "覆盖度除零避免的Epsilon值");
-        aa_strength = config.getFloat("aa_strength", Configuration.CATEGORY_GENERAL, 2.0f, 0.0f, 10.0f, "0=无AA，1=标准");
-        strength = config.getFloat("strength", Configuration.CATEGORY_GENERAL, 64.0f, 0.0f, 128.0f, "采样强度系数");
-        sigma = config.getFloat("sigma", Configuration.CATEGORY_GENERAL, 2.0f, 0.0f, 10.0f, "高斯标准差");
         blackThreshold = config.getFloat("blackThreshold", Configuration.CATEGORY_GENERAL, 0.3f, 0.0f, 1.0f, "判定黑色阈值");
+        blurRadius = config.getFloat("blurRadius", Configuration.CATEGORY_GENERAL, 4.0f, 0.0f, 64.0f, "模糊程度");
 
         if (config.hasChanged()) {
             config.save();

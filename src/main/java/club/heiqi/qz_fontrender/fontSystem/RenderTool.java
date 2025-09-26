@@ -117,11 +117,14 @@ public class RenderTool {
         shaderManager.setUniformVec2("textureSize", textureSize);
 
         shaderManager.setUniformF("internalAlphaThreshold", Config.internalAlphaThreshold);
-        shaderManager.setUniformF("sampleMultiplier", Config.sampleMultiplier);
-        shaderManager.setUniformF("coverageEpsilon", Config.coverageEpsilon);
-        shaderManager.setUniformI("sampleOffset", Config.sampleOffset);
-        shaderManager.setUniformI("minSamplesPerAxis", Config.minSamplesPerAxis);
-        shaderManager.setUniformI("maxSamplesPerAxis", Config.maxSamplesPerAxis);
-        shaderManager.setUniformF("blackThreshold", Config.blackThreshold);
+        shaderManager.setUniformF("blurRadius", Config.blurRadius);
+        shaderManager.setUniformF("boldStrength", Config.boldStrength);
+        shaderManager.setUniformVec2("smoothRange", new Vector2f(Config.smoothRangeMin, Config.smoothRangeMax));
+        // shaderManager.setUniformF("sampleMultiplier", Config.sampleMultiplier);
+        // shaderManager.setUniformF("coverageEpsilon", Config.coverageEpsilon);
+        // shaderManager.setUniformI("sampleOffset", Config.sampleOffset);
+        // shaderManager.setUniformI("minSamplesPerAxis", Config.minSamplesPerAxis);
+        // shaderManager.setUniformI("maxSamplesPerAxis", Config.maxSamplesPerAxis);
+        // shaderManager.setUniformF("blackThreshold", Config.blackThreshold);
     }
 }
