@@ -114,17 +114,11 @@ public class RenderTool {
         shaderManager.setUniformM4f("projection", new Matrix4f(projection));
         shaderManager.setUniformVec4("color", new Vector4f(red, green, blue, alpha));
 
-        shaderManager.setUniformVec2("textureSize", textureSize);
+        // shaderManager.setUniformVec2("textureSize", textureSize);
 
-        shaderManager.setUniformF("internalAlphaThreshold", Config.internalAlphaThreshold);
         shaderManager.setUniformF("blurRadius", Config.blurRadius);
         shaderManager.setUniformVec2("smoothRange", new Vector2f(Config.smoothRangeMin, Config.smoothRangeMax));
         shaderManager.setUniformI("smoothSwitcher", Config.smoothSwitcher ? 1 : 0);
-        // shaderManager.setUniformF("sampleMultiplier", Config.sampleMultiplier);
-        // shaderManager.setUniformF("coverageEpsilon", Config.coverageEpsilon);
-        // shaderManager.setUniformI("sampleOffset", Config.sampleOffset);
-        // shaderManager.setUniformI("minSamplesPerAxis", Config.minSamplesPerAxis);
-        // shaderManager.setUniformI("maxSamplesPerAxis", Config.maxSamplesPerAxis);
-        // shaderManager.setUniformF("blackThreshold", Config.blackThreshold);
+        shaderManager.setUniformI("sampleR", Config.sampleR);
     }
 }

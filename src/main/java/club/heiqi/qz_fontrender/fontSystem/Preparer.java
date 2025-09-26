@@ -27,7 +27,9 @@ public class Preparer {
 
     @SubscribeEvent
     public void onRenderTick(TickEvent.RenderTickEvent event) {
-        Minecraft.getMinecraft().fontRenderer.drawStringWithShadow("正在后台准备字体，可能存在卡顿，当前可正常游玩", 0, (int) Config.charSize * 2, 0xf05556);
+        if (Config.prepareTipRender)
+            Minecraft.getMinecraft().fontRenderer.drawStringWithShadow(
+                    "正在后台准备字体，可能存在卡顿，当前可正常游玩", 0, (int) Config.charSize * 2, 0xf05556);
         ArrayList<Integer> collect = new ArrayList<>();
         // 处理常规字体
         normalImages.forEach((codepoint, info) -> {
