@@ -65,6 +65,7 @@ public class ReplaceFontRender extends FontRenderer {
 
     @Override
     public int drawString(String text, int x, int y, int color, boolean dropShadow) {
+        if (text.isEmpty()) return 0;
         this.enableAlpha();
         this.resetStyles();
         int xPos;
@@ -560,6 +561,7 @@ public class ReplaceFontRender extends FontRenderer {
     }
 
     private void renderStringAligned(String s, int x, int y, int wrapWidth, int color, boolean shadow) {
+        if (s.isEmpty()) return;
         if (this.bidiFlag) {
             int i1 = this.getStringWidth(this.bidiReorder(s));
             x = x + wrapWidth - i1;
