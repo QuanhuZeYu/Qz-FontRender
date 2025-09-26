@@ -115,7 +115,6 @@ public class RenderTool {
         shaderManager.setUniformVec4("color", new Vector4f(red, green, blue, alpha));
 
         shaderManager.setUniformVec2("textureSize", textureSize);
-        shaderManager.setUniformVec2("smoothRange", new Vector2f(Config.smoothRangeMin, Config.smoothRangeMax));
 
         shaderManager.setUniformF("internalAlphaThreshold", Config.internalAlphaThreshold);
         shaderManager.setUniformF("sampleMultiplier", Config.sampleMultiplier);
@@ -123,5 +122,6 @@ public class RenderTool {
         shaderManager.setUniformI("sampleOffset", Config.sampleOffset);
         shaderManager.setUniformI("minSamplesPerAxis", Config.minSamplesPerAxis);
         shaderManager.setUniformI("maxSamplesPerAxis", Config.maxSamplesPerAxis);
+        shaderManager.setUniformF("blackThreshold", Config.blackThreshold);
     }
 }

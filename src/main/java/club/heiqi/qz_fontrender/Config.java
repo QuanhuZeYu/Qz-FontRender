@@ -29,7 +29,7 @@ public class Config {
 
     public static float guiScale;
     public static float smoothRangeMin, smoothRangeMax;
-    public static float internalAlphaThreshold, sampleMultiplier, coverageEpsilon;
+    public static float internalAlphaThreshold, sampleMultiplier, coverageEpsilon, aa_strength, strength, sigma, blackThreshold;
 
     public void init(File configFile) {
         if (config == null) {
@@ -44,23 +44,27 @@ public class Config {
         guiScaleFix = config.getBoolean("guiScaleFix", Configuration.CATEGORY_GENERAL, false, "GUI缩放修复");
 
 
-        sampleOffset = config.getInt("sampleOffset", Configuration.CATEGORY_GENERAL, 1, 1, 2, "采样计算中的偏移量");
-        minSamplesPerAxis = config.getInt("minSamplesPerAxis", Configuration.CATEGORY_GENERAL, 3, 1, 10, "每个轴最小采样次数");
-        maxSamplesPerAxis = config.getInt("maxSamplesPerAxis", Configuration.CATEGORY_GENERAL, 8, 1, 10, "每个轴最大采样次数");
+        sampleOffset = config.getInt("sampleOffset", Configuration.CATEGORY_GENERAL, 1, 1, 10, "采样计算中的偏移量");
+        minSamplesPerAxis = config.getInt("minSamplesPerAxis", Configuration.CATEGORY_GENERAL, 5, 1, 10, "每个轴最小采样次数");
+        maxSamplesPerAxis = config.getInt("maxSamplesPerAxis", Configuration.CATEGORY_GENERAL, 16, 1, 32, "每个轴最大采样次数");
 
 
-        guiScale = config.getFloat("guiScale", Configuration.CATEGORY_GENERAL, 4.0f, Float.MIN_VALUE, Float.MAX_VALUE, "界面缩放(注意！此值会覆盖原版设定值！)");
+        guiScale = config.getFloat("guiScale", Configuration.CATEGORY_GENERAL, 3.0f, Float.MIN_VALUE, Float.MAX_VALUE, "界面缩放(注意！此值会覆盖原版设定值！)");
         characterSpacing = config.getFloat("characterSpacing", Configuration.CATEGORY_GENERAL, 0.1f, Float.MIN_VALUE, Float.MAX_VALUE, "字间距");
         spaceWidth = config.getFloat("spaceWidth", Configuration.CATEGORY_GENERAL, ReplaceFontRender.DEFAULT_CHAR_WIDTH/2f, Float.MIN_VALUE, Float.MAX_VALUE, "空格宽度");
-        shadowOffsetX = config.getFloat("shadowOffsetX", Configuration.CATEGORY_GENERAL, 0.5f, -Float.MAX_VALUE, Float.MAX_VALUE, "投影位置偏移X");
-        shadowOffsetY = config.getFloat("shadowOffsetY", Configuration.CATEGORY_GENERAL, 0.5f, -Float.MAX_VALUE, Float.MAX_VALUE, "投影位置偏移Y");
+        shadowOffsetX = config.getFloat("shadowOffsetX", Configuration.CATEGORY_GENERAL, 0.2f, -Float.MAX_VALUE, Float.MAX_VALUE, "投影位置偏移X");
+        shadowOffsetY = config.getFloat("shadowOffsetY", Configuration.CATEGORY_GENERAL, 0.2f, -Float.MAX_VALUE, Float.MAX_VALUE, "投影位置偏移Y");
         charSize = config.getFloat("charSize", Configuration.CATEGORY_GENERAL, 9f, -Float.MAX_VALUE, Float.MAX_VALUE, "字体大小");
         lineSpacing = config.getFloat("lineSpacing", Configuration.CATEGORY_GENERAL, 1.0f, -Float.MAX_VALUE, Float.MAX_VALUE, "行间距");
-        smoothRangeMin = config.getFloat("smoothRangeMin", Configuration.CATEGORY_GENERAL, 0.05f, 0.0f, 1.0f, "平滑范围(控制alpha平滑区间)");
-        smoothRangeMax = config.getFloat("smoothRangeMax", Configuration.CATEGORY_GENERAL, 0.5f, 0.0f, 1.0f, "平滑范围(控制alpha平滑区间)");
-        internalAlphaThreshold = config.getFloat("internalAlphaThreshold", Configuration.CATEGORY_GENERAL, 0.9f, 0.0f, 1.0f, "字符内部实心却与的alpha判断阈值");
-        sampleMultiplier = config.getFloat("sampleMultiplier", Configuration.CATEGORY_GENERAL, 0.5f, 0.0f, 1.0f, "采样次数计算中的乘法因子");
-        coverageEpsilon = config.getFloat("coverageEpsilon", Configuration.CATEGORY_GENERAL, 0.5f, 0.0f, 1.0f, "覆盖度除零避免的Epsilon值");
+        smoothRangeMin = config.getFloat("smoothRangeMin", Configuration.CATEGORY_GENERAL, 0.2f, 0.0f, 1.0f, "平滑范围(控制alpha平滑区间)");
+        smoothRangeMax = config.getFloat("smoothRangeMax", Configuration.CATEGORY_GENERAL, 0.8f, 0.0f, 1.0f, "平滑范围(控制alpha平滑区间)");
+        internalAlphaThreshold = config.getFloat("internalAlphaThreshold", Configuration.CATEGORY_GENERAL, 0.99f, 0.0f, 1.0f, "字符内部实心却与的alpha判断阈值");
+        sampleMultiplier = config.getFloat("sampleMultiplier", Configuration.CATEGORY_GENERAL, 1.5f, 0.0f, 1.0f, "采样次数计算中的乘法因子");
+        coverageEpsilon = config.getFloat("coverageEpsilon", Configuration.CATEGORY_GENERAL, 0.0001f, 0.0f, 1.0f, "覆盖度除零避免的Epsilon值");
+        aa_strength = config.getFloat("aa_strength", Configuration.CATEGORY_GENERAL, 1.0f, 0.0f, 10.0f, "0=无AA，1=标准");
+        strength = config.getFloat("strength", Configuration.CATEGORY_GENERAL, 8.0f, 0.0f, 64.0f, "采样强度系数");
+        sigma = config.getFloat("sigma", Configuration.CATEGORY_GENERAL, 1.0f, 0.0f, 10.0f, "高斯标准差");
+        blackThreshold = config.getFloat("blackThreshold", Configuration.CATEGORY_GENERAL, 0.3f, 0.0f, 1.0f, "判定黑色阈值");
 
         if (config.hasChanged()) {
             config.save();
