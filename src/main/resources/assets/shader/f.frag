@@ -13,7 +13,6 @@ uniform int smoothSwitcher = 0;
 uniform int sampleR = 1;
 
 bool isBlack(vec3 inColor) {
-    // TODO 首先判断COLOR自身是否小于 blackThreshold 阈值 不小于再判断输入颜色是否小于 blackThreshold 阈值 如果小于则判定为黑色
     if (color.r > blackThreshold && color.g > blackThreshold && color.b > blackThreshold) {
         if (inColor.r < blackThreshold && inColor.g < blackThreshold && inColor.b < blackThreshold) {
             return true;
@@ -35,7 +34,6 @@ vec4 safeSampler(sampler2D tex, vec2 uv) {
     return texture(tex, uv);
 }
 
-// 修改后的高斯模糊函数
 vec4 gaussianBlur(sampler2D tex, vec2 uv, vec2 texelSize, float blurRadius) {
     int sampleCount = sampleR;
     float sigma = blurRadius * 0.333;
@@ -51,7 +49,6 @@ vec4 gaussianBlur(sampler2D tex, vec2 uv, vec2 texelSize, float blurRadius) {
 
             vec4 sampleColor = safeSampler(tex, sampleUV);
 
-            // 不再单独处理黑色像素，而是统一使用权重
             accumulatedColor += sampleColor * weight;
             totalWeight += weight;
         }
@@ -67,19 +64,14 @@ vec4 gaussianBlur(sampler2D tex, vec2 uv, vec2 texelSize, float blurRadius) {
 void main() {
     vec2 texelSize = vec2(dFdx(texCoord.x), dFdy(texCoord.y));
 
-    // 传递颜色乘数到模糊函数
     vec4 gaussianSample = clamp(gaussianBlur(SamTex, texCoord, texelSize, blurRadius), vec4(0), vec4(1));
 
-    // 如果alpha大于步进阈值 且 采样颜色被判定为错误黑色 重新设置颜色
     if (gaussianSample.a > smoothRange.y && isBlack(gaussianSample.rgb)) {
         gaussianSample.rgb = color.rgb;
     }
-    // 在应用颜色乘数之前应用平滑
     if (smoothSwitcher > 0) {
-        // 只对alpha通道应用平滑，避免影响颜色通道
         gaussianSample.a = smoothstep(smoothRange.x, smoothRange.y, gaussianSample.a);
     }
 
-    // 输出最终颜色
     fragColor = vec4(gaussianSample.rgb * color.rgb, gaussianSample.a);
 }
