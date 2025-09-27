@@ -53,7 +53,7 @@ public class Config {
         shadowOffsetY = config.getFloat("shadowOffsetY", Configuration.CATEGORY_GENERAL, 0.2f, -Float.MAX_VALUE, Float.MAX_VALUE, "投影位置偏移Y");
         charSize = config.getFloat("charSize", Configuration.CATEGORY_GENERAL, 9f, -Float.MAX_VALUE, Float.MAX_VALUE, "字体大小");
         lineSpacing = config.getFloat("lineSpacing", Configuration.CATEGORY_GENERAL, 1.0f, -Float.MAX_VALUE, Float.MAX_VALUE, "行间距");
-        sigma = config.getFloat("sigma", Configuration.CATEGORY_GENERAL, 3.14f, 0.0f, 64.0f, "高斯核标准差");
+        sigma = config.getFloat("sigma", Configuration.CATEGORY_GENERAL, 2.0f, 0.0f, 64.0f, "高斯核标准差");
         blurRadius = config.getFloat("blurRadius", Configuration.CATEGORY_GENERAL, 2f, 0.0f, 64.0f, "模糊程度");
         smoothRangeMin = config.getFloat("smoothRangeMin", Configuration.CATEGORY_GENERAL, 0f, 0.0f, 1.0f, "平滑最小参数");
         smoothRangeMax = config.getFloat("smoothRangeMax", Configuration.CATEGORY_GENERAL, 1f, 0.0f, 1.0f, "平滑最大参数");
