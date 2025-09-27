@@ -13,10 +13,10 @@ public class Config {
     public static String configPath;
     public static Configuration config;
 
-    public static boolean guiScaleFix, backendGeneration, prepareTipRender, smoothSwitcher;
+    public static boolean guiScaleFix, backendGeneration, prepareTipRender;
 
 
-    public static int sampleR;
+    public static int sampleCount;
 
 
     public static float characterSpacing;
@@ -27,8 +27,7 @@ public class Config {
     public static float lineSpacing;
 
     public static float guiScale;
-    public static float smoothRangeMin, smoothRangeMax;
-    public static float blurRadius;
+    public static float sigma, blurRadius, smoothRangeMin, smoothRangeMax;
 
     public void init(File configFile) {
         if (config == null) {
@@ -42,10 +41,9 @@ public class Config {
         backendGeneration = config.getBoolean("backendGeneration", Configuration.CATEGORY_GENERAL, true, "后台持续生成字符");
         guiScaleFix = config.getBoolean("guiScaleFix", Configuration.CATEGORY_GENERAL, false, "GUI缩放修复");
         prepareTipRender = config.getBoolean("prepareTipRender", Configuration.CATEGORY_GENERAL, true, "准备字体提示信息渲染");
-        smoothSwitcher = config.getBoolean("smoothSwitcher", Configuration.CATEGORY_GENERAL, true, "是否使用平滑钳制功能");
 
 
-        sampleR = config.getInt("sampleR", Configuration.CATEGORY_GENERAL, 2, 0, 10, "高斯模糊采样半径和次数因子");
+        sampleCount = config.getInt("sampleCount", Configuration.CATEGORY_GENERAL, 2, 0, Integer.MAX_VALUE, "高斯模糊采样半径");
 
 
         guiScale = config.getFloat("guiScale", Configuration.CATEGORY_GENERAL, 3.0f, Float.MIN_VALUE, Float.MAX_VALUE, "界面缩放(注意！此值会覆盖原版设定值！)");
@@ -55,9 +53,10 @@ public class Config {
         shadowOffsetY = config.getFloat("shadowOffsetY", Configuration.CATEGORY_GENERAL, 0.2f, -Float.MAX_VALUE, Float.MAX_VALUE, "投影位置偏移Y");
         charSize = config.getFloat("charSize", Configuration.CATEGORY_GENERAL, 9f, -Float.MAX_VALUE, Float.MAX_VALUE, "字体大小");
         lineSpacing = config.getFloat("lineSpacing", Configuration.CATEGORY_GENERAL, 1.0f, -Float.MAX_VALUE, Float.MAX_VALUE, "行间距");
-        smoothRangeMin = config.getFloat("smoothRangeMin", Configuration.CATEGORY_GENERAL, 0.25f, 0.0f, 1.0f, "平滑范围(控制alpha平滑区间)小于此值的都会被设置为0");
-        smoothRangeMax = config.getFloat("smoothRangeMax", Configuration.CATEGORY_GENERAL, 0.3f, 0.0f, 1.0f, "平滑范围(控制alpha平滑区间)大于此值的都会被设置为1");
-        blurRadius = config.getFloat("blurRadius", Configuration.CATEGORY_GENERAL, 1.0f, 0.0f, 64.0f, "模糊半径");
+        sigma = config.getFloat("sigma", Configuration.CATEGORY_GENERAL, 3.14f, 0.0f, 64.0f, "高斯核标准差");
+        blurRadius = config.getFloat("blurRadius", Configuration.CATEGORY_GENERAL, 2f, 0.0f, 64.0f, "模糊程度");
+        smoothRangeMin = config.getFloat("smoothRangeMin", Configuration.CATEGORY_GENERAL, 0f, 0.0f, 1.0f, "平滑最小参数");
+        smoothRangeMax = config.getFloat("smoothRangeMax", Configuration.CATEGORY_GENERAL, 1f, 0.0f, 1.0f, "平滑最大参数");
 
         if (config.hasChanged()) {
             config.save();

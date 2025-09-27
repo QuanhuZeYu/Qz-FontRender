@@ -212,17 +212,6 @@ public class CharacterTexturePage {
 
         renderTool.render(vertex, uv, index, color, new Vector2f(this.width, this.height), new Vector4f(u0, v0, u1, v1));
 
-        // GL11.glBegin(GL11.GL_QUADS);
-        // GL11.glTexCoord2d(u0, v0);
-        // GL11.glVertex3f(italic ? x+2 : x, y, 0);
-        // GL11.glTexCoord2d(u0, v1);
-        // GL11.glVertex3f(x, y+height, 0);
-        // GL11.glTexCoord2d(u1, v1);
-        // GL11.glVertex3f(x+width, y+height, 0);
-        // GL11.glTexCoord2d(u1, v0);
-        // GL11.glVertex3f(italic ? x+width+2 : x+width, y, 0);
-        // GL11.glEnd();
-
         GL11.glColor4f(floatBuffer.get(0), floatBuffer.get(1), floatBuffer.get(2), floatBuffer.get(3));
     }
 

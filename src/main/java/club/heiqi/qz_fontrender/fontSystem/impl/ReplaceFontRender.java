@@ -1,21 +1,17 @@
 package club.heiqi.qz_fontrender.fontSystem.impl;
 
 import club.heiqi.qz_fontrender.Config;
-import club.heiqi.qz_fontrender.MyMod;
 import club.heiqi.qz_fontrender.fontSystem.*;
-import club.heiqi.qz_fontrender.fontSystem.shader.ShaderManager;
 import com.ibm.icu.text.ArabicShaping;
 import com.ibm.icu.text.ArabicShapingException;
 import com.ibm.icu.text.Bidi;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.settings.GameSettings;
 import net.minecraft.util.ResourceLocation;
 import org.joml.Vector3d;
-import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
@@ -25,7 +21,6 @@ import java.io.InputStream;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.List;
 
 public class ReplaceFontRender extends FontRenderer {
@@ -489,15 +484,11 @@ public class ReplaceFontRender extends FontRenderer {
             GL11.glDisable(GL11.GL_LIGHTING);
             GL11.glEnable(GL11.GL_ALPHA_TEST);
 
-            if (CharacterTexturePage.renderTool == null) {
-                CharacterTexturePage.renderTool = new RenderTool();
-                CharacterTexturePage.renderTool.init();
-            }
+            initRenderTool();
             CharacterTexturePage.renderTool.shaderManager.bind();
 
-
+            // 🐕 实际渲染工作 🐱
             this.renderStringAtPos(text, shadow);
-
 
             CharacterTexturePage.renderTool.shaderManager.unbind();
 
@@ -694,4 +685,10 @@ public class ReplaceFontRender extends FontRenderer {
     //     }
     //     return builder.toString();
     // }
+    public void initRenderTool() {
+        if (CharacterTexturePage.renderTool == null) {
+            CharacterTexturePage.renderTool = new RenderTool();
+            CharacterTexturePage.renderTool.init();
+        }
+    }
 }

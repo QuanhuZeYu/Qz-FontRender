@@ -56,8 +56,7 @@ public class RenderTool {
     }
 
     public void render(float[] vertex, float[] uv, int[] index, int color, Vector2f textureSize, Vector4f uvInfo) {
-        GL11.glDisable(GL11.GL_BLEND);
-        // shaderManager.bind();
+        GL11.glEnable(GL11.GL_BLEND);
         setUniform(color, textureSize, uvInfo);
 
         GL30.glBindVertexArray(vao);
@@ -89,9 +88,6 @@ public class RenderTool {
         GL30.glBindVertexArray(0);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
-
-        // shaderManager.unbind();
-        GL11.glEnable(GL11.GL_BLEND);
     }
 
     private final FloatBuffer modelView = BufferUtils.createFloatBuffer(16);
@@ -114,11 +110,13 @@ public class RenderTool {
         shaderManager.setUniformM4f("projection", new Matrix4f(projection));
         shaderManager.setUniformVec4("color", new Vector4f(red, green, blue, alpha));
 
-        // shaderManager.setUniformVec2("textureSize", textureSize);
-
+        shaderManager.setUniformVec2("textureSize", textureSize);
+        shaderManager.setUniformVec4("uvBounds", uvInfo);
+        shaderManager.setUniformF("sigma", Config.sigma);
         shaderManager.setUniformF("blurRadius", Config.blurRadius);
+        shaderManager.setUniformI("sampleCount", Config.sampleCount);
         shaderManager.setUniformVec2("smoothRange", new Vector2f(Config.smoothRangeMin, Config.smoothRangeMax));
-        shaderManager.setUniformI("smoothSwitcher", Config.smoothSwitcher ? 1 : 0);
-        shaderManager.setUniformI("sampleR", Config.sampleR);
+        // shaderManager.setUniformI("smoothSwitcher", Config.smoothSwitcher ? 1 : 0);
+        // shaderManager.setUniformI("sampleR", Config.sampleR);
     }
 }
