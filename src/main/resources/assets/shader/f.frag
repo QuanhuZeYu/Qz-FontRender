@@ -28,7 +28,6 @@ vec4 safeSampler(sampler2D tex, vec2 uv) {
     return texture(tex, uv);
 }
 
-// 修改后的高斯模糊函数
 vec4 gaussianBlur(sampler2D tex, vec2 uv, vec2 texelSize) {
     float totalWeight = 0.0;
     vec4 accumulatedColor = vec4(0);
@@ -41,8 +40,7 @@ vec4 gaussianBlur(sampler2D tex, vec2 uv, vec2 texelSize) {
             float weight = gaussianWeight2D(vec2(float(i), float(j)) / float(sampleCount / 2) * blurRadius);
 
             vec4 sampleColor = safeSampler(tex, sampleUV);
-
-            // 不再单独处理黑色像素，而是统一使用权重
+            
             accumulatedColor += sampleColor * weight;
             totalWeight += weight;
         }
