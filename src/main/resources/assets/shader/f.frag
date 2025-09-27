@@ -40,7 +40,7 @@ vec4 gaussianBlur(sampler2D tex, vec2 uv, vec2 texelSize) {
             float weight = gaussianWeight2D(vec2(float(i), float(j)) / float(sampleCount / 2) * blurRadius);
 
             vec4 sampleColor = safeSampler(tex, sampleUV);
-            
+
             accumulatedColor += sampleColor * weight;
             totalWeight += weight;
         }
