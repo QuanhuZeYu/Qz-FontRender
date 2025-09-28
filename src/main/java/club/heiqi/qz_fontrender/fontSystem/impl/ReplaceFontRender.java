@@ -25,7 +25,7 @@ import java.util.List;
 
 public class ReplaceFontRender extends FontRenderer {
     public static final float DEFAULT_CHAR_WIDTH = 9f;
-    public float curCharWidth = DEFAULT_CHAR_WIDTH;
+    public float curCharWidth;
     public float saveR, saveG, saveB, saveA;
     public CharacterGenFactory factory;
     public FontManager fontManager;
@@ -37,6 +37,7 @@ public class ReplaceFontRender extends FontRenderer {
         super(gameSettings, location, manager, b);
         fontManager = new FontManager(fontSize);
         factory = new CharacterGenFactory(fontManager, textureWidth, textureHeight, charWidth, charHeight, maintainPool);
+        curCharWidth = Config.charSize;
     }
 
     @Override
@@ -257,7 +258,6 @@ public class ReplaceFontRender extends FontRenderer {
     private void renderStringAtPos(String s, boolean shadow) {
         loadRandomSampleWidth();
 
-        this.curCharWidth = Config.charSize;
         this.FONT_HEIGHT = (int) Config.charSize;
         // 1. 以§做分割
         String[] splits = s.split("(?=§)");
