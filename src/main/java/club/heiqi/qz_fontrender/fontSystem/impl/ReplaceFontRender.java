@@ -691,4 +691,14 @@ public class ReplaceFontRender extends FontRenderer {
             CharacterTexturePage.renderTool.init();
         }
     }
+
+    public void setCharSize(float size) {
+        this.curCharWidth = size;
+        this.FONT_HEIGHT = (int) Math.ceil(curCharWidth);
+    }
+
+    public void resetCharSize() {
+        this.curCharWidth = Config.charSize;
+        this.FONT_HEIGHT = (int) Math.ceil(curCharWidth);
+    }
 }
