@@ -1,12 +1,14 @@
-package club.heiqi.qz_fontrender.fontSystem;
+package club.heiqi.qz_fontrender.fontsystem;
 
 import club.heiqi.qz_fontrender.Config;
-import club.heiqi.qz_fontrender.fontSystem.shader.ShaderManager;
+
+import club.heiqi.qz_fontrender.fontsystem.shader.ShaderManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
-import org.joml.Vector4f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
@@ -17,35 +19,51 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
 public class RenderTool {
+    public static Logger LOG = LogManager.getLogger();
+    public static RenderTool instance;
+
+    public static RenderTool getInstance() {
+        if (instance == null) {
+            instance = new RenderTool();
+        }
+        return instance;
+    }
+
     public ShaderManager shaderManager;
-    public int vao, vbo, tbo, ebo;
+    public int vao, vbo, tbo, cbo, ebo;
 
     public RenderTool() {
         init();
     }
 
     public void init() {
-        if (vao == 0 || vbo == 0 || ebo == 0) {
+        // vao == 0 || vbo == 0 || ebo == 0 增加 cbo != 0 的检查
+        if (vao == 0 || vbo == 0 || tbo == 0 || cbo == 0 || ebo == 0) {
             vao = GL30.glGenVertexArrays();
             GL30.glBindVertexArray(vao);
 
+            // 顶点 (位置) VBO - 属性索引 0 (3个float: x, y, z)
             vbo = GL15.glGenBuffers();
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
-            // GL15.glBufferData(GL15.GL_ARRAY_BUFFER, (FloatBuffer) null, GL15.GL_DYNAMIC_DRAW);
-            GL20.glVertexAttribPointer(0,3,GL11.GL_FLOAT,false,0,0);
+            GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 0, 0);
 
+            // 纹理坐标 TBO - 属性索引 1 (2个float: u, v)
             tbo = GL15.glGenBuffers();
-            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER,tbo);
-            // GL15.glBufferData(GL15.GL_ARRAY_BUFFER, (FloatBuffer) null,GL15.GL_DYNAMIC_DRAW);
-            GL20.glVertexAttribPointer(1,2,GL11.GL_FLOAT,false,0,0);
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, tbo);
+            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 0, 0);
 
+            // **新增：颜色 CBO - 属性索引 2 (4个float: r, g, b, a)**
+            cbo = GL15.glGenBuffers();
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, cbo);
+            GL20.glVertexAttribPointer(2, 4, GL11.GL_FLOAT, false, 0, 0); // 颜色通常是 R G B A (4分量)
+
+            // 索引 EBO
             ebo = GL15.glGenBuffers();
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ebo);
-            // GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, (IntBuffer) null, GL15.GL_DYNAMIC_DRAW);
 
             GL30.glBindVertexArray(0);
-            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER,0);
-            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER,0);
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
         }
         if (shaderManager == null) {
             shaderManager = new ShaderManager().loadFromJar(
@@ -55,35 +73,114 @@ public class RenderTool {
         }
     }
 
-    public void render(float[] vertex, float[] uv, int[] index, int color, Vector2f textureSize, Vector4f uvInfo) {
-        GL11.glEnable(GL11.GL_BLEND);
-        setUniform(color, textureSize, uvInfo);
+    private static final int ONE_MB_ELEMENTS = 1048576 / 4;
+    private FloatBuffer vertexBuffer = BufferUtils.createFloatBuffer(ONE_MB_ELEMENTS);  // 初始化1MB
+    private FloatBuffer texCoordBuffer = BufferUtils.createFloatBuffer(ONE_MB_ELEMENTS);
+    private FloatBuffer colorBuffer = BufferUtils.createFloatBuffer(ONE_MB_ELEMENTS);
+    private IntBuffer indexBuffer = BufferUtils.createIntBuffer(ONE_MB_ELEMENTS);
+    /**
+     * 检查并扩容缓冲区。如果当前容量不足以容纳所需数据，将按 1MB 的步长逐次扩容。
+     * @param currentBuffer 当前缓冲区。
+     * @param requiredSize 目标数组的长度（所需容量）。
+     * @param bufferName 缓冲区名称，用于输出。
+     * @return 扩容或保持不变后的新缓冲区。
+     */
+    private FloatBuffer checkAndResizeBuffer(FloatBuffer currentBuffer, int requiredSize, String bufferName) {
+        if (requiredSize > currentBuffer.capacity()) {
+            int currentCapacity = currentBuffer.capacity();
+            int newCapacity = currentCapacity;
+
+            LOG.warn("⚠️ **注意：** " + bufferName + " 缓冲区容量不足！");
+            LOG.warn("    - 当前容量（元素数）：" + currentCapacity);
+            LOG.warn("    - 所需容量（元素数）：" + requiredSize);
+            LOG.warn("    - 扩容步进（1MB 元素数）：" + ONE_MB_ELEMENTS);
+
+            // 使用 while 循环逐次增加容量直到满足 requiredSize
+            while (newCapacity < requiredSize) {
+                newCapacity += ONE_MB_ELEMENTS;
+            }
+
+            LOG.warn("    - 扩容后新容量（元素数）：" + newCapacity);
+            LOG.warn("    - **正在重新创建缓冲区...**");
+
+            FloatBuffer newBuffer = BufferUtils.createFloatBuffer(newCapacity);
+
+            return newBuffer;
+        }
+        return currentBuffer;
+    }
+
+    /**
+     * 检查并扩容缓冲区（IntBuffer 版本）。如果当前容量不足以容纳所需数据，将按 1MB 的步长逐次扩容。
+     */
+    private IntBuffer checkAndResizeBuffer(IntBuffer currentBuffer, int requiredSize, String bufferName) {
+        if (requiredSize > currentBuffer.capacity()) {
+            int currentCapacity = currentBuffer.capacity();
+            int newCapacity = currentCapacity;
+
+            LOG.warn("⚠️ **注意：** " + bufferName + " 缓冲区容量不足！");
+            LOG.warn("    - 当前容量（元素数）：" + currentCapacity);
+            LOG.warn("    - 所需容量（元素数）：" + requiredSize);
+            LOG.warn("    - 扩容步进（1MB 元素数）：" + ONE_MB_ELEMENTS);
+
+            // 使用 while 循环逐次增加容量直到满足 requiredSize
+            while (newCapacity < requiredSize) {
+                newCapacity += ONE_MB_ELEMENTS;
+            }
+
+            LOG.warn("    - 扩容后新容量（元素数）：" + newCapacity);
+            LOG.warn("    - **正在重新创建缓冲区...**");
+
+            IntBuffer newBuffer = BufferUtils.createIntBuffer(newCapacity);
+            return newBuffer;
+        }
+        return currentBuffer;
+    }
+    public void render(float[] vertex, float[] uv, float[] color, int[] index) {
+        vertexBuffer.clear();
+        texCoordBuffer.clear();
+        colorBuffer.clear();
+        indexBuffer.clear();
+
+        setUniform();
 
         GL30.glBindVertexArray(vao);
 
-        // vertex
+        // 1. 顶点 (位置)
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
-        FloatBuffer bufferV = BufferUtils.createFloatBuffer(vertex.length);
-        bufferV.put(vertex).flip();
-        GL15.glBufferData(GL15.GL_ARRAY_BUFFER,bufferV,GL15.GL_DYNAMIC_DRAW);
+        vertexBuffer = checkAndResizeBuffer(vertexBuffer, vertex.length, "顶点");
+        vertexBuffer.put(vertex).flip();
+        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, vertexBuffer, GL15.GL_DYNAMIC_DRAW);
 
-        // uv
+        // 2. 纹理坐标
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, tbo);
-        FloatBuffer bufferT = BufferUtils.createFloatBuffer(uv.length);
-        bufferT.put(uv).flip();
-        GL15.glBufferData(GL15.GL_ARRAY_BUFFER,bufferT,GL15.GL_DYNAMIC_DRAW);
+        texCoordBuffer = checkAndResizeBuffer(texCoordBuffer, uv.length, "纹理坐标");
+        texCoordBuffer.put(uv).flip();
+        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, texCoordBuffer, GL15.GL_DYNAMIC_DRAW);
 
-        // index
-        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER,ebo);
-        IntBuffer bufferI = BufferUtils.createIntBuffer(index.length);
-        bufferI.put(index).flip();
-        GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER,bufferI,GL15.GL_DYNAMIC_DRAW);
+        // **3. 新增：颜色**
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, cbo);
+        colorBuffer = checkAndResizeBuffer(colorBuffer, color.length, "颜色");
+        colorBuffer.put(color).flip();
+        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, colorBuffer, GL15.GL_DYNAMIC_DRAW);
 
-        GL20.glEnableVertexAttribArray(0);
-        GL20.glEnableVertexAttribArray(1);
+        // 4. 索引
+        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ebo);
+        indexBuffer = checkAndResizeBuffer(indexBuffer, index.length, "索引");
+        indexBuffer.put(index).flip();
+        GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, indexBuffer, GL15.GL_DYNAMIC_DRAW);
+
+        // 启用属性数组
+        GL20.glEnableVertexAttribArray(0); // 顶点
+        GL20.glEnableVertexAttribArray(1); // 纹理坐标
+        GL20.glEnableVertexAttribArray(2); // **新增：颜色**
+
         GL11.glDrawElements(GL11.GL_TRIANGLES, index.length, GL11.GL_UNSIGNED_INT, 0);
+
+        // 禁用属性数组
         GL20.glDisableVertexAttribArray(0);
         GL20.glDisableVertexAttribArray(1);
+        GL20.glDisableVertexAttribArray(2); // **新增：颜色**
 
         GL30.glBindVertexArray(0);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
@@ -92,29 +189,21 @@ public class RenderTool {
 
     private final FloatBuffer modelView = BufferUtils.createFloatBuffer(16);
     private final FloatBuffer projection = BufferUtils.createFloatBuffer(16);
-    public void setUniform(int color, Vector2f textureSize, Vector4f uvInfo) {
+    public void setUniform() {
         modelView.clear(); projection.clear();
         GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, modelView);
         GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, projection);
         modelView.flip(); projection.flip();
-
-        float alpha = ((color >> 24) & 255) / 255f;
-        float red = ((color >> 16) & 255) / 255f;
-        float green = ((color >> 8) & 255) / 255f;
-        float blue = (color & 255) / 255f;
 
         Minecraft mc = Minecraft.getMinecraft();
         ScaledResolution resolution = new ScaledResolution(mc, mc.displayWidth, mc.displayHeight);
 
         shaderManager.setUniformM4f("modelview", new Matrix4f(modelView));
         shaderManager.setUniformM4f("projection", new Matrix4f(projection));
-        shaderManager.setUniformVec4("color", new Vector4f(red, green, blue, alpha));
 
-        shaderManager.setUniformVec2("textureSize", textureSize);
-        shaderManager.setUniformVec4("uvBounds", uvInfo);
         shaderManager.setUniformF("sigma", Config.sigma);
         shaderManager.setUniformF("blurRadius", Config.blurRadius);
-        shaderManager.setUniformI("sampleCount", Config.sampleCount);
+        shaderManager.setUniformI("sampleRadius", Config.sampleRadius);
         shaderManager.setUniformVec2("smoothRange", new Vector2f(Config.smoothRangeMin, Config.smoothRangeMax));
         // shaderManager.setUniformI("smoothSwitcher", Config.smoothSwitcher ? 1 : 0);
         // shaderManager.setUniformI("sampleR", Config.sampleR);

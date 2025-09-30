@@ -1,6 +1,6 @@
 package club.heiqi.qz_fontrender.mixins.early;
 
-import club.heiqi.qz_fontrender.fontSystem.impl.ReplaceFontRender;
+import club.heiqi.qz_fontrender.fontsystem.impl.ReplaceFontRender;
 import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -22,7 +22,7 @@ public class MixinMinecraft {
         Minecraft mc = ((Minecraft)((Object)this));
         if (qz_FontRender$replaceFontRender == null) {
             qz_FontRender$replaceFontRender = new ReplaceFontRender(mc.gameSettings, mc.fontRenderer.locationFontTexture, mc.renderEngine, false,
-                    2048, 2048, 64, 64, 10, 64*0.8f);
+                    2048, 2048, 64, 64, 3, 64*0.8f);
         }
 
         if (!(mc.fontRenderer instanceof ReplaceFontRender)) {

@@ -1,6 +1,6 @@
 package club.heiqi.qz_fontrender.docs;
 
-import club.heiqi.qz_fontrender.fontSystem.utils.StringUTF32;
+import club.heiqi.qz_fontrender.fontsystem.utils.StringUTF32;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiScreen;

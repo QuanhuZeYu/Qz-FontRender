@@ -1,21 +1,28 @@
-package club.heiqi.qz_fontrender.fontSystem;
+package club.heiqi.qz_fontrender.fontsystem;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.awt.Font;
-import java.awt.FontFormatException;
-import java.awt.GraphicsEnvironment;
+import java.awt.*;
 import java.awt.font.FontRenderContext;
 import java.awt.font.GlyphVector;
 import java.awt.geom.AffineTransform;
-import java.io.*;
-import java.nio.file.*;
-import java.util.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
 
 public class FontManager {
     public static Logger LOG = LogManager.getLogger();
-    public float fontSize = 32f;
+    public float fontSize;
     /**存储所有可用的awt字体对象*/
     public LinkedHashSet<Font> fonts = new LinkedHashSet<>();
 
@@ -29,10 +36,10 @@ public class FontManager {
 
     public Font findSuitable(int codepoint, int type) {
         for (Font font : fonts) {
-            if (type == EnumFontType.NORMAL && !font.getName().toLowerCase().contains("bold") && checkFontCanDisplay(font, codepoint)) {
+            if (type == PageManager.NORMAL && !font.getName().toLowerCase().contains("bold") && checkFontCanDisplay(font, codepoint)) {
                 return font.deriveFont(Font.PLAIN);
             }
-            if (type == EnumFontType.BOLD && font.getName().toLowerCase().contains("bold") && checkFontCanDisplay(font, codepoint)) {
+            if (type == PageManager.BOLD && font.getName().toLowerCase().contains("bold") && checkFontCanDisplay(font, codepoint)) {
                 return font.deriveFont(Font.BOLD);
             }
         }

@@ -1,4 +1,4 @@
-package club.heiqi.qz_fontrender.fontSystem.utils;
+package club.heiqi.qz_fontrender.fontsystem.utils;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

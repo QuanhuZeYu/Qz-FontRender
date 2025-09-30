@@ -2,7 +2,7 @@ package club.heiqi.qz_fontrender;
 
 import java.io.File;
 
-import club.heiqi.qz_fontrender.fontSystem.impl.ReplaceFontRender;
+import club.heiqi.qz_fontrender.fontsystem.impl.ReplaceFontRender;
 import cpw.mods.fml.client.event.ConfigChangedEvent;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
@@ -16,7 +16,7 @@ public class Config {
     public static boolean guiScaleFix, backendGeneration, prepareTipRender;
 
 
-    public static int sampleCount;
+    public static int sampleRadius;
 
 
     public static float characterSpacing;
@@ -28,6 +28,7 @@ public class Config {
 
     public static float guiScale;
     public static float sigma, blurRadius, smoothRangeMin, smoothRangeMax;
+    public static float awtCharSize;
 
     public void init(File configFile) {
         if (config == null) {
@@ -43,20 +44,21 @@ public class Config {
         prepareTipRender = config.getBoolean("prepareTipRender", Configuration.CATEGORY_GENERAL, true, "准备字体提示信息渲染");
 
 
-        sampleCount = config.getInt("sampleCount", Configuration.CATEGORY_GENERAL, 2, 0, Integer.MAX_VALUE, "高斯模糊采样半径");
+        sampleRadius = config.getInt("sampleRadius", Configuration.CATEGORY_GENERAL, 1, 0, Integer.MAX_VALUE, "高斯模糊采样半径");
 
 
         guiScale = config.getFloat("guiScale", Configuration.CATEGORY_GENERAL, 3.0f, Float.MIN_VALUE, Float.MAX_VALUE, "界面缩放(注意！此值会覆盖原版设定值！)");
         characterSpacing = config.getFloat("characterSpacing", Configuration.CATEGORY_GENERAL, 0.1f, Float.MIN_VALUE, Float.MAX_VALUE, "字间距");
         spaceWidth = config.getFloat("spaceWidth", Configuration.CATEGORY_GENERAL, ReplaceFontRender.DEFAULT_CHAR_WIDTH/2f, Float.MIN_VALUE, Float.MAX_VALUE, "空格宽度");
-        shadowOffsetX = config.getFloat("shadowOffsetX", Configuration.CATEGORY_GENERAL, 0.2f, -Float.MAX_VALUE, Float.MAX_VALUE, "投影位置偏移X");
-        shadowOffsetY = config.getFloat("shadowOffsetY", Configuration.CATEGORY_GENERAL, 0.2f, -Float.MAX_VALUE, Float.MAX_VALUE, "投影位置偏移Y");
+        shadowOffsetX = config.getFloat("shadowOffsetX", Configuration.CATEGORY_GENERAL, 0.3f, -Float.MAX_VALUE, Float.MAX_VALUE, "投影位置偏移X");
+        shadowOffsetY = config.getFloat("shadowOffsetY", Configuration.CATEGORY_GENERAL, 0.3f, -Float.MAX_VALUE, Float.MAX_VALUE, "投影位置偏移Y");
         charSize = config.getFloat("charSize", Configuration.CATEGORY_GENERAL, 9f, -Float.MAX_VALUE, Float.MAX_VALUE, "字体大小");
         lineSpacing = config.getFloat("lineSpacing", Configuration.CATEGORY_GENERAL, 1.0f, -Float.MAX_VALUE, Float.MAX_VALUE, "行间距");
         sigma = config.getFloat("sigma", Configuration.CATEGORY_GENERAL, 2.0f, 0.0f, 64.0f, "高斯核标准差");
         blurRadius = config.getFloat("blurRadius", Configuration.CATEGORY_GENERAL, 1f, 0.0f, 64.0f, "模糊程度");
         smoothRangeMin = config.getFloat("smoothRangeMin", Configuration.CATEGORY_GENERAL, 0f, 0.0f, 1.0f, "平滑最小参数");
         smoothRangeMax = config.getFloat("smoothRangeMax", Configuration.CATEGORY_GENERAL, 1f, 0.0f, 1.0f, "平滑最大参数");
+        awtCharSize = config.getFloat("awtCharSize", Configuration.CATEGORY_GENERAL, 64f, 0.0f, Float.MAX_VALUE, "awt字体分辨率");
 
         if (config.hasChanged()) {
             config.save();
