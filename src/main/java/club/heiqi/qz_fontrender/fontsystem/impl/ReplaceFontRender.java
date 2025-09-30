@@ -143,13 +143,15 @@ public class ReplaceFontRender extends FontRenderer {
                     CharInfo info = page.getCharInfo(codepoint);  // 流程不错的情况下info不为null
 
                     // 处理随机化的情况
-                    if (randomStyle && randomLoaded) {
+                    if (randomStyle) {
                         float randomWidth = 0;
                         int randomCharCodepoint;
                         do {
                             int randomIndex = fontRandom.nextInt(randomSample.length());
                             randomCharCodepoint = randomSample.charAt(randomIndex);
-                            randomWidth = randomSampleWidthList[randomIndex];
+                            CharPage randomPage = PageManager.getInstance().getPage(codepoint, fontType);
+                            if (randomPage == null) continue;  // 没生成好等待 找下一个
+                            randomWidth = randomPage.getCharInfo(codepoint).advance;
                         }
                         while (Math.abs(info.advance - randomWidth) > 0.05f);
 
@@ -290,13 +292,15 @@ public class ReplaceFontRender extends FontRenderer {
                 CharInfo info = page.getCharInfo(codepoint);  // info不可为null
 
                 // 处理随机化的情况
-                if (randomStyle && randomLoaded) {
+                if (randomStyle) {
                     float randomWidth = 0;
                     int randomCharCodepoint;
                     do {
                         int randomIndex = fontRandom.nextInt(randomSample.length());
                         randomCharCodepoint = randomSample.charAt(randomIndex);
-                        randomWidth = randomSampleWidthList[randomIndex];
+                        CharPage randomPage = PageManager.getInstance().getPage(codepoint, fontType);
+                        if (randomPage == null) continue;  // 没生成好等待 找下一个
+                        randomWidth = randomPage.getCharInfo(codepoint).advance;
                     }
                     while (Math.abs(info.advance - randomWidth) > 0.05f);
 
@@ -332,123 +336,6 @@ public class ReplaceFontRender extends FontRenderer {
             "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~" +
             "ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜø£Ø×ƒáíóúñÑªº¿®¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀" +
             "αβΓπΣσμτΦΘΩδ∞∅∈∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■";
-    public static float[] randomSampleWidthList;
-    /**解析字符串以渲染，主要识别 § `0123456789abcdefklmnor` 17字符+5控制字符?
-     * k = 随机化
-     * l = 粗体
-     * m = 删除线样式
-     * n = 下划线
-     * o = 斜体
-     * r = 重置*/
-    private void renderStringAtPos(String s, boolean shadow) {
-        loadRandomSampleWidth();
-
-        this.FONT_HEIGHT = (int) Config.charSize;
-        // 1. 以§做分割
-        String[] splits = s.split("(?=§)");
-
-
-        // 2. 操作分割后的单元
-        int red = (int) (this.red * 255), green = (int) (this.blue * 255), blue = (int) (this.green * 255),
-            fontType = PageManager.NORMAL, color = 0xff << 24 | red << 16 | green << 8 | blue & 0xff;
-        for (String split : splits) {
-            // 2.1 先检查单元中是否有操作符
-            if (split.startsWith("§") && split.length() >= 2) {
-                char controlChar = split.toLowerCase().charAt(1);
-                switch (controlChar) {
-                    case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'  -> {
-                        this.randomStyle = false;
-                        this.boldStyle = false;
-                        this.strikethroughStyle = false;
-                        this.underlineStyle = false;
-                        this.italicStyle = false;
-                        int colorIndex = "0123456789abcdefklmnor".indexOf(controlChar);
-                        if (shadow) colorIndex = colorIndex + 16;
-                        color = colorCode[colorIndex];
-                    }
-                    case 'k' -> {
-                        randomStyle = true;
-                    }
-                    case 'l' -> {
-                        boldStyle = true;
-                        fontType = PageManager.BOLD;
-                    }
-                    case 'm' -> {
-                        strikethroughStyle = true;
-                    }
-                    case 'n' -> {
-                        underlineStyle = true;
-                    }
-                    case 'o' -> {
-                        italicStyle = true;
-                    }
-                    case 'r' -> {
-                        this.resetStyles();
-                        fontType = PageManager.NORMAL;
-                        red = (int) (saveR * 255); green = (int) (saveG * 255); blue = (int) (saveB * 255);
-                        color = (int) (saveA * 255) << 24 | red << 16 | green << 8 | blue & 0xff;
-                    }
-                    // 任何没有见过的操作符都视作重置！
-                    default -> {
-                        this.resetStyles();
-                        fontType = PageManager.NORMAL;
-                        red = (int) (saveR * 255); green = (int) (saveG * 255); blue = (int) (saveB * 255);
-                        color = (int) (saveA * 255) << 24 | red << 16 | green << 8 | blue & 0xff;
-                    }
-                }
-            }
-
-
-            // 2.2 提取剩余无操作符文字
-            if (split.startsWith("§") && split.length() <= 2) continue;
-            String text = split;
-            if (split.startsWith("§")) text = split.substring(2);
-            // 遍历字符
-            for (int i = 0; i < text.length();) {
-                int codepoint = text.codePointAt(i);
-                int charCountInCodePoint = Character.charCount(codepoint);
-                i += charCountInCodePoint;
-
-                CharPage page = PageManager.getInstance().getPage(codepoint, fontType);
-                LineInfo lineInfo = new LineInfo().setColor(color);
-                // 如果没有找到则跳过
-                if (page == null || Character.isSpaceChar(codepoint)) {
-                    collectDraw(Config.spaceWidth, lineInfo);
-                    continue;
-                }
-                CharInfo info = page.getCharInfo(codepoint);
-                float charAdvance = info.advance;
-                float charWidth = charAdvance / info.width * this.curCharWidth + Config.characterSpacing;
-
-                // 处理随机化字符
-                if (randomStyle && randomLoaded) {
-                    float randomWidth = 0;
-                    int randomCharCodepoint;
-                    do {
-                        int randomIndex = fontRandom.nextInt(randomSample.length());
-                        randomCharCodepoint = randomSample.charAt(randomIndex);
-                        randomWidth = randomSampleWidthList[randomIndex];
-                    }
-                    while (Math.abs(charAdvance - randomWidth) > 0.05f);
-
-                    page = PageManager.getInstance().getPage(randomCharCodepoint, PageManager.NORMAL);
-                    // 如果没有找到则跳过
-                    if (page == null) {
-                        collectDraw(Config.spaceWidth, lineInfo);
-                        continue;
-                    }
-                }
-
-                // ========== 渲染 ==========
-                // batchRenderer.collect(posX,posY,curCharWidth,curCharWidth,page,info,color,italicStyle);
-                // page.renderChar(info, color, posX, posY, this.curCharWidth, this.curCharWidth, this.italicStyle);
-                // ========== 渲染 ==========
-
-                // 2.2.3 处理下划线等情况
-                collectDraw(charWidth, lineInfo);
-            }
-        }
-    }
 
     private void renderStringAtPos_Version2(String text, boolean shadow) {
         int textLength = text.length();
@@ -482,6 +369,7 @@ public class ReplaceFontRender extends FontRenderer {
                         int colorIndex = "0123456789abcdefklmnor".indexOf(codepoint);
                         if (shadow) colorIndex = colorIndex + 16;
                         color = colorCode[colorIndex];
+                        color = ((int)(saveA * 255)) << 24 | color;
                     }
                     case 'k' -> {
                         randomStyle = true;
@@ -520,7 +408,7 @@ public class ReplaceFontRender extends FontRenderer {
 
                 // 提取下一个字符
                 if (i < textLength) {
-                    codepoint = text.codePointAt(i);
+
                 }
                 // 如果已经到达末尾结束
                 else {
@@ -540,13 +428,15 @@ public class ReplaceFontRender extends FontRenderer {
                     CharInfo info = page.getCharInfo(codepoint);  // info不可为null
 
                     // 处理随机化的情况
-                    if (randomStyle && randomLoaded) {
+                    if (randomStyle) {
                         float randomWidth = 0;
                         int randomCharCodepoint;
                         do {
                             int randomIndex = fontRandom.nextInt(randomSample.length());
                             randomCharCodepoint = randomSample.charAt(randomIndex);
-                            randomWidth = randomSampleWidthList[randomIndex];
+                            CharPage randomPage = PageManager.getInstance().getPage(codepoint, fontType);
+                            if (randomPage == null) continue;  // 没生成好等待 找下一个
+                            randomWidth = randomPage.getCharInfo(codepoint).advance;
                         }
                         while (Math.abs(info.advance - randomWidth) > 0.05f);
 
@@ -568,55 +458,15 @@ public class ReplaceFontRender extends FontRenderer {
         }
     }
 
-    private void renderAChar(float x, float y, float charSize, CharPage page, CharInfo info, int inColor, boolean italic) {
-        float u0 = (float)info.getU0(page.textureSize);
-        float u1 = (float)info.getU1(page.textureSize);
-        float v0 = (float)info.getV0(page.textureSize);
-        float v1 = (float)info.getV1(page.textureSize);
-        float alpha = (float) (inColor >> 24) / 255;
-        float red = (float) ((inColor >> 16) & 255) / 255;
-        float green = (float) ((inColor >> 8) & 255) / 255;
-        float blue = (float) (inColor & 255) / 255;
-
-        float[] vertex = new float[] {
-                // 左上
-                italic ? x+2 : x, y, 0,
-                // 左下
-                x, y+charSize, 0,
-                // 右下
-                x+charSize, y+charSize, 0,
-                // 右上
-                italic ? x+charSize+2 : x+charSize, y, 0
-        };
-        float[] texCoord = new float[] {
-                u0, v0,
-                u0, v1,
-                u1, v1,
-                u1, v0,
-        };
-        float[] color = new float[] {
-                red, green, blue, alpha,
-                red, green, blue, alpha,
-                red, green, blue, alpha,
-                red, green, blue, alpha,
-        };
-        int[] index = new int[] {
-                0,1,2, 2,3,0
-        };
-
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D, page.textureID);
-        RenderTool.getInstance().render(vertex,texCoord,color,index);
-    }
-
     public static class LineInfo {
         public ArrayList<Vector3d> lineVertex = new ArrayList<>();
         public Vector4f lineColor = new Vector4f();
 
         public LineInfo setColor(int color) {
-            lineColor.x = (color >> 16) & 255;
-            lineColor.y = (color >> 8) & 255;
-            lineColor.z = (color) & 255;
-            lineColor.w = (color >> 24) & 255;
+            lineColor.x = (float) ((color >> 16) & 255) / 255;
+            lineColor.y = (float) ((color >> 8) & 255) / 255;
+            lineColor.z = (float) ((color) & 255) / 255;
+            lineColor.w = (float) ((color >> 24) & 255) / 255;
             return this;
         }
 
@@ -647,10 +497,10 @@ public class ReplaceFontRender extends FontRenderer {
             lineInfos.add(lineInfo);
         }
         if (this.strikethroughStyle) {
-            lineInfo.addVertex(new Vector3d((this.posX), this.posY + (this.curCharWidth / 2) + 1, 0.0d))
-                    .addVertex(new Vector3d((this.posX + width), this.posY + (this.curCharWidth / 2) + 1, 0.0d))
-                    .addVertex(new Vector3d(new Vector3d((this.posX + width), (this.posY + this.curCharWidth - 1.0d), 0.0d)))
-                    .addVertex(new Vector3d(new Vector3d((this.posX), (this.posY + this.curCharWidth - 1.0d), 0.0d)));
+            lineInfo.addVertex(new Vector3d((this.posX), this.posY + (this.curCharWidth / 2) - 0.5, 0.0d))
+                    .addVertex(new Vector3d((this.posX + width), this.posY + (this.curCharWidth / 2) - 0.5, 0.0d))
+                    .addVertex(new Vector3d(new Vector3d((this.posX + width), this.posY + (this.curCharWidth / 2) + 0.5, 0.0d)))
+                    .addVertex(new Vector3d(new Vector3d((this.posX), this.posY + (this.curCharWidth / 2) + 0.5, 0.0d)));
             lineInfos.add(lineInfo);
         }
 
@@ -720,6 +570,7 @@ public class ReplaceFontRender extends FontRenderer {
             GL11.glDisable(GL11.GL_ALPHA_TEST);
             GL11.glDisable(GL11.GL_FOG);
             GL11.glDisable(GL11.GL_DEPTH_TEST);
+            GL11.glDisable(GL11.GL_CULL_FACE);
             GL11.glEnable(GL11.GL_BLEND);
             GL11.glEnable(GL11.GL_TEXTURE_2D);
 
@@ -840,38 +691,6 @@ public class ReplaceFontRender extends FontRenderer {
         }
 
         return builder.toString();
-    }
-
-
-
-    private boolean randomLoaded = false;
-    private void loadRandomSampleWidth() {
-        if (randomLoaded) return;
-
-        if (randomSampleWidthList == null) {
-            for (int i = 0; i < randomSample.length(); i++) {
-                int codepoint = randomSample.codePointAt(i);
-                PageManager.instance.getPage(codepoint, PageManager.NORMAL);
-            }
-            randomSampleWidthList = new float[randomSample.length()];
-            return;
-        }
-
-        for (int i = 0; i < randomSample.length(); i++) {
-            int codepoint = randomSample.codePointAt(i);
-            CharPage page = PageManager.getInstance().getPage(codepoint, PageManager.NORMAL);
-            if (page == null) return;
-        }
-
-        for (int i = 0; i < randomSample.length(); i++) {
-            int codepoint = randomSample.codePointAt(i);
-            CharPage page = PageManager.getInstance().getPage(codepoint, PageManager.NORMAL);
-            if (page == null) return;
-            CharInfo info = page.getCharInfo(codepoint);
-            randomSampleWidthList[i] = info.advance;
-        }
-
-        randomLoaded = true;
     }
 
     public void setCharSize(float size) {
