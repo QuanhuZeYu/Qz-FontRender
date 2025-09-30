@@ -13,7 +13,7 @@ public class Config {
     public static String configPath;
     public static Configuration config;
 
-    public static boolean guiScaleFix, backendGeneration, prepareTipRender;
+    public static boolean guiScaleFix;
 
 
     public static int sampleRadius;
@@ -39,9 +39,7 @@ public class Config {
     }
 
     public void load() {
-        backendGeneration = config.getBoolean("backendGeneration", Configuration.CATEGORY_GENERAL, true, "后台持续生成字符");
         guiScaleFix = config.getBoolean("guiScaleFix", Configuration.CATEGORY_GENERAL, false, "GUI缩放修复");
-        prepareTipRender = config.getBoolean("prepareTipRender", Configuration.CATEGORY_GENERAL, true, "准备字体提示信息渲染");
 
 
         sampleRadius = config.getInt("sampleRadius", Configuration.CATEGORY_GENERAL, 1, 0, Integer.MAX_VALUE, "高斯模糊采样半径");
