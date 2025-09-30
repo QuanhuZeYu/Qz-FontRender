@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class BatchRenderFont {
-    public ArrayList<Float> vertex = new ArrayList<>();
+    public ArrayList<Double> vertex = new ArrayList<>();
     public ArrayList<Float> texCoord = new ArrayList<>();
     public ArrayList<Float> color = new ArrayList<>();
     public ArrayList<Integer> index = new ArrayList<>();
@@ -31,15 +31,15 @@ public class BatchRenderFont {
             float green = (float) ((inColor >> 8) & 255) / 255;
             float blue = (float) (inColor & 255) / 255;
 
-            float[] vertex = new float[] {
+            double[] vertex = new double[] {
                     // 左上
-                    italic ? x+2 : x, y, 0,
+                    italic ? x+2 : x, y, 0.1,
                     // 左下
-                    x, y+charSize, 0,
+                    x, y+charSize, 0.1,
                     // 右下
-                    x+charSize, y+charSize, 0,
+                    x+charSize, y+charSize, 0.1,
                     // 右上
-                    italic ? x+charSize+2 : x+charSize, y, 0
+                    italic ? x+charSize+2 : x+charSize, y, 0.1
             };
             float[] texCoord = new float[] {
                     u0, v0,
@@ -58,7 +58,7 @@ public class BatchRenderFont {
             };
 
             int preVertexCount = this.vertex.isEmpty() ? 0 : this.vertex.size() / 3;
-            for (float v : vertex) {
+            for (double v : vertex) {
                 this.vertex.add(v);
             }
             for (float tex : texCoord) {
@@ -106,18 +106,18 @@ public class BatchRenderFont {
         index.clear();
     }
 
-    public float[] toArrayF(ArrayList<Float> in) {
+    public <T extends Number>float[] toArrayF(ArrayList<T> in) {
         float[] result = new float[in.size()];
         for (int i = 0; i < in.size(); i++) {
-            result[i] = in.get(i);
+            result[i] = in.get(i).floatValue();
         }
         return result;
     }
 
-    public int[] toArrayI(ArrayList<Integer> in) {
+    public <T extends Number>int[] toArrayI(ArrayList<T> in) {
         int[] result = new int[in.size()];
         for (int i = 0; i < in.size(); i++) {
-            result[i] = in.get(i);
+            result[i] = in.get(i).intValue();
         }
         return result;
     }
