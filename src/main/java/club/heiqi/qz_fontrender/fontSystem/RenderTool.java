@@ -136,38 +136,25 @@ public class RenderTool {
         }
         return currentBuffer;
     }
-    public void render(float[] vertex, float[] uv, float[] color, int[] index) {
-        vertexBuffer.clear();
-        texCoordBuffer.clear();
-        colorBuffer.clear();
-        indexBuffer.clear();
-
+    public void render(FloatBuffer vertexBuffer, FloatBuffer texCoordBuffer, FloatBuffer colorBuffer, IntBuffer indexBuffer, int indexLength) {
         setUniform();
 
         GL30.glBindVertexArray(vao);
 
         // 1. 顶点 (位置)
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
-        vertexBuffer = checkAndResizeBuffer(vertexBuffer, vertex.length, "顶点");
-        vertexBuffer.put(vertex).flip();
         GL15.glBufferData(GL15.GL_ARRAY_BUFFER, vertexBuffer, GL15.GL_DYNAMIC_DRAW);
 
         // 2. 纹理坐标
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, tbo);
-        texCoordBuffer = checkAndResizeBuffer(texCoordBuffer, uv.length, "纹理坐标");
-        texCoordBuffer.put(uv).flip();
         GL15.glBufferData(GL15.GL_ARRAY_BUFFER, texCoordBuffer, GL15.GL_DYNAMIC_DRAW);
 
         // **3. 新增：颜色**
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, cbo);
-        colorBuffer = checkAndResizeBuffer(colorBuffer, color.length, "颜色");
-        colorBuffer.put(color).flip();
         GL15.glBufferData(GL15.GL_ARRAY_BUFFER, colorBuffer, GL15.GL_DYNAMIC_DRAW);
 
         // 4. 索引
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ebo);
-        indexBuffer = checkAndResizeBuffer(indexBuffer, index.length, "索引");
-        indexBuffer.put(index).flip();
         GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, indexBuffer, GL15.GL_DYNAMIC_DRAW);
 
         // 启用属性数组
@@ -175,7 +162,7 @@ public class RenderTool {
         GL20.glEnableVertexAttribArray(1); // 纹理坐标
         GL20.glEnableVertexAttribArray(2); // **新增：颜色**
 
-        GL11.glDrawElements(GL11.GL_TRIANGLES, index.length, GL11.GL_UNSIGNED_INT, 0);
+        GL11.glDrawElements(GL11.GL_TRIANGLES, indexLength, GL11.GL_UNSIGNED_INT, 0);
 
         // 禁用属性数组
         GL20.glDisableVertexAttribArray(0);
@@ -186,6 +173,30 @@ public class RenderTool {
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
     }
+    public void render(float[] vertex, float[] uv, float[] color, int[] index) {
+        vertexBuffer.clear();
+        texCoordBuffer.clear();
+        colorBuffer.clear();
+        indexBuffer.clear();
+
+        // 1. 顶点 (位置)
+        vertexBuffer = checkAndResizeBuffer(vertexBuffer, vertex.length, "顶点");
+        vertexBuffer.put(vertex).flip();
+
+        // 2. 纹理坐标
+        texCoordBuffer = checkAndResizeBuffer(texCoordBuffer, uv.length, "纹理坐标");
+        texCoordBuffer.put(uv).flip();
+
+        // **3. 新增：颜色**
+        colorBuffer = checkAndResizeBuffer(colorBuffer, color.length, "颜色");
+        colorBuffer.put(color).flip();
+
+        // 4. 索引
+        indexBuffer = checkAndResizeBuffer(indexBuffer, index.length, "索引");
+        indexBuffer.put(index).flip();
+
+        render(vertexBuffer,texCoordBuffer,colorBuffer,indexBuffer,index.length);
+    }
 
     private final FloatBuffer modelView = BufferUtils.createFloatBuffer(16);
     private final FloatBuffer projection = BufferUtils.createFloatBuffer(16);
@@ -195,9 +206,6 @@ public class RenderTool {
         GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, projection);
         modelView.flip(); projection.flip();
 
-        Minecraft mc = Minecraft.getMinecraft();
-        ScaledResolution resolution = new ScaledResolution(mc, mc.displayWidth, mc.displayHeight);
-
         shaderManager.setUniformM4f("modelview", new Matrix4f(modelView));
         shaderManager.setUniformM4f("projection", new Matrix4f(projection));
 
@@ -205,7 +213,5 @@ public class RenderTool {
         shaderManager.setUniformF("blurRadius", Config.blurRadius);
         shaderManager.setUniformI("sampleRadius", Config.sampleRadius);
         shaderManager.setUniformVec2("smoothRange", new Vector2f(Config.smoothRangeMin, Config.smoothRangeMax));
-        // shaderManager.setUniformI("smoothSwitcher", Config.smoothSwitcher ? 1 : 0);
-        // shaderManager.setUniformI("sampleR", Config.sampleR);
     }
 }

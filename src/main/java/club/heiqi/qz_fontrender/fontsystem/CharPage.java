@@ -6,13 +6,14 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.HashSet;
 
 public class CharPage {
     public static Logger LOG = LogManager.getLogger();
     public final int textureID;
     public final int textureSize, charSize;
-    public final HashSet<CharInfo> chars = new HashSet<>();
+    public final HashMap<Integer, CharInfo> chars = new HashMap<>();
 
     public CharPage(int textureSize, int charSize) {
         this.textureSize = textureSize;
@@ -66,7 +67,7 @@ public class CharPage {
         charInfo.x = x;
         charInfo.y = y;
 
-        chars.add(charInfo);
+        chars.put(charInfo.codepoint, charInfo);
     }
 
 
@@ -88,20 +89,13 @@ public class CharPage {
 
 
     public boolean isCharInPage(int codepoint) {
-        for (CharInfo aChar : chars) {
-            if (aChar.codepoint == codepoint) {
-                return true;
-            }
-        }
-        return false;
+        CharInfo charInfo = chars.get(codepoint);
+        return charInfo != null;
     }
 
     public CharInfo getCharInfo(int codepoint) {
-        for (CharInfo aChar : chars) {
-            if (aChar.codepoint == codepoint) {
-                return aChar;
-            }
-        }
+        CharInfo charInfo = chars.get(codepoint);
+        if (charInfo != null) return charInfo;
         LOG.error("字符 【{}】 不在本纹理页 ({}) 中", new String(Character.toChars(codepoint)), textureID);
         throw new RuntimeException("字符 【"+new String(Character.toChars(codepoint))+"】 不在本纹理页 ("+textureID+") 中");
     }
