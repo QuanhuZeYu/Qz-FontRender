@@ -1,4 +1,4 @@
-# Qz-FontRender
+<img width="2560" height="1392" alt="a229ac33c0262929b0613ea78e139dbb" src="https://github.com/user-attachments/assets/09822b30-a418-4586-9df9-b31b88a344fe" /># Qz-FontRender
 
 一个高性能、跨语种支持的字体渲染引擎，完整支持 Unicode 多语种平面，带来流畅且多样的字体显示体验。现在，在 Minecraft 中轻松使用 Emoji 和各种特殊字符！
 
@@ -12,13 +12,18 @@
 
 ## 预览
 
-![preview.png](preview.png)
+* 初版 ![preview.png](preview.png)
+* 稳定版本效果1 <img width="2560" height="1392" alt="a229ac33c0262929b0613ea78e139dbb" src="https://github.com/user-attachments/assets/dfab59e7-cb04-4ae3-8164-2fda11e3d9f7" />
+* 稳定版本效果2 <img width="2560" height="1392" alt="7edfb0dd098cf92fa4da10fd9591ea6f" src="https://github.com/user-attachments/assets/a2d5f6f1-87d3-4716-8b95-3a73a3f93321" />
+
 
 ## 使用说明
 
 - **切换字体**：您可以通过调整 `fonts` 文件夹中字体文件的**排序顺序**来切换当前使用的字体。更换后，请在游戏中点击**资源包界面的“确定”按钮**，即可重新加载字体生效。
 
 - **字体回滚机制**：当某个字体无法渲染特定字符时，渲染器将自动依照排序顺序尝试后续字体，确保字符显示无缝兼容。
+
+- **彩色EMJ相关**: 如果需要使用彩色EMJ和字符，可以使用JetBrain的JDK来启动游戏，如果您发现有其他可以渲染彩色字符的JDK欢迎讨论
 
 ---
 
