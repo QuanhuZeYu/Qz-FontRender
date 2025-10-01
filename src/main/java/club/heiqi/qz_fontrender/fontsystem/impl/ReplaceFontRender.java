@@ -141,25 +141,6 @@ public class ReplaceFontRender extends FontRenderer {
                     width += Config.spaceWidth;
                 } else {
                     CharInfo info = page.getCharInfo(codepoint);  // 流程不错的情况下info不为null
-
-                    // 处理随机化的情况
-                    if (randomStyle) {
-                        float randomWidth = 0;
-                        int randomCharCodepoint;
-                        do {
-                            int randomIndex = fontRandom.nextInt(randomSample.length());
-                            randomCharCodepoint = randomSample.charAt(randomIndex);
-                            CharPage randomPage = PageManager.getInstance().getPage(codepoint, fontType);
-                            if (randomPage == null) continue;  // 没生成好等待 找下一个
-                            randomWidth = randomPage.getCharInfo(codepoint).advance;
-                        }
-                        while (Math.abs(info.advance - randomWidth) > 0.05f);
-
-                        CharPage replacePage = PageManager.getInstance().getPage(randomCharCodepoint, PageManager.NORMAL);
-                        // 如果随机化的字符页为空回退到原始字符页
-                        page = replacePage == null ? page : replacePage;
-                        info = replacePage == null ? page.getCharInfo(codepoint) : replacePage.getCharInfo(randomCharCodepoint);
-                    }
                     width += ((info.advance / info.width) * this.curCharWidth) + Config.characterSpacing;
                 }
 
@@ -290,25 +271,6 @@ public class ReplaceFontRender extends FontRenderer {
             }
             else {
                 CharInfo info = page.getCharInfo(codepoint);  // info不可为null
-
-                // 处理随机化的情况
-                if (randomStyle) {
-                    float randomWidth = 0;
-                    int randomCharCodepoint;
-                    do {
-                        int randomIndex = fontRandom.nextInt(randomSample.length());
-                        randomCharCodepoint = randomSample.charAt(randomIndex);
-                        CharPage randomPage = PageManager.getInstance().getPage(codepoint, fontType);
-                        if (randomPage == null) continue;  // 没生成好等待 找下一个
-                        randomWidth = randomPage.getCharInfo(codepoint).advance;
-                    }
-                    while (Math.abs(info.advance - randomWidth) > 0.05f);
-
-                    CharPage replacePage = PageManager.getInstance().getPage(randomCharCodepoint, PageManager.NORMAL);
-                    // 如果随机化的字符页为空回退到原始字符页
-                    page = replacePage == null ? page : replacePage;
-                    info = replacePage == null ? page.getCharInfo(codepoint) : replacePage.getCharInfo(randomCharCodepoint);
-                }
                 width += ((info.advance / info.width) * this.curCharWidth) + Config.characterSpacing;
             }
 
@@ -425,10 +387,13 @@ public class ReplaceFontRender extends FontRenderer {
                 if (page == null) {
                     width = Config.spaceWidth;
                 } else {
+                    // 获取字符的信息
                     CharInfo info = page.getCharInfo(codepoint);  // info不可为null
 
                     // 处理随机化的情况
                     if (randomStyle) {
+                        // 直接使用原始的字宽而不是随机的字宽
+                        width = ((info.advance / info.width) * this.curCharWidth) + Config.characterSpacing;
                         float randomWidth = 0;
                         int randomCharCodepoint;
                         do {
@@ -445,7 +410,9 @@ public class ReplaceFontRender extends FontRenderer {
                         page = replacePage == null ? page : replacePage;
                         info = replacePage == null ? page.getCharInfo(codepoint) : replacePage.getCharInfo(randomCharCodepoint);
                     }
-                    width = ((info.advance / info.width) * this.curCharWidth) + Config.characterSpacing;
+                    else {
+                        width = ((info.advance / info.width) * this.curCharWidth) + Config.characterSpacing;
+                    }
 
                     // TODO 实际渲染环节
                     // batchRenderer.collect(posX, posY, curCharWidth, curCharWidth, page, info, color, italicStyle);
