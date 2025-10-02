@@ -11,26 +11,22 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Minecraft.class)
 public class MixinMinecraft {
 
-    @Unique
-    public ReplaceFontRender qz_FontRender$replaceFontRender;
-
     @Inject(
             method = "runGameLoop",
             at = @At("HEAD")
     )
     public void perTick(CallbackInfo callbackInfo) {
         Minecraft mc = ((Minecraft)((Object)this));
-        if (qz_FontRender$replaceFontRender == null) {
-            qz_FontRender$replaceFontRender = new ReplaceFontRender(mc.gameSettings, mc.fontRenderer.locationFontTexture, mc.renderEngine, false
-            );
+        if (ReplaceFontRender.instance == null) {
+            new ReplaceFontRender(mc.gameSettings, mc.fontRenderer.locationFontTexture, mc.renderEngine, false);
         }
 
         if (!(mc.fontRenderer instanceof ReplaceFontRender)) {
-            mc.fontRenderer = qz_FontRender$replaceFontRender;
+            mc.fontRenderer = ReplaceFontRender.instance;
             System.out.println("Replace FontRenderer!");
         }
         if (!(mc.standardGalacticFontRenderer instanceof ReplaceFontRender)) {
-            mc.standardGalacticFontRenderer = qz_FontRender$replaceFontRender;
+            mc.standardGalacticFontRenderer = ReplaceFontRender.instance;
             System.out.println("Replace FontRenderer!");
         }
     }

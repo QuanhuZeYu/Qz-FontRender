@@ -62,6 +62,7 @@ public class Config {
 
         if (config.hasChanged()) {
             config.save();
+            ReplaceFontRender.instance.setCharSize(charSize);
         }
     }
 

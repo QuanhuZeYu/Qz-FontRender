@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class ReplaceFontRender extends FontRenderer {
+    public static ReplaceFontRender instance;
     public static final float DEFAULT_CHAR_WIDTH = 9f;
     public float curCharSize;
     public float saveR, saveG, saveB, saveA;
@@ -35,6 +36,7 @@ public class ReplaceFontRender extends FontRenderer {
         super(gameSettings, location, manager, b);
         curCharSize = Config.charSize;
         registerResourceManager();
+        instance = this;
     }
 
     public void registerResourceManager() {
@@ -510,7 +512,6 @@ public class ReplaceFontRender extends FontRenderer {
      * 返回当前X坐标位置 即光标位置
      */
     private int renderString(String text, int x, int y, int color, boolean shadow) {
-        setCharSize(Config.charSize);
         float fx = x;
         float fy = y;
         if (text == null) {
