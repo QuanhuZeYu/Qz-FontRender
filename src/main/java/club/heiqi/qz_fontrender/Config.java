@@ -29,6 +29,7 @@ public class Config {
     public static float guiScale;
     public static float sigma, blurRadius, smoothRangeMin, smoothRangeMax;
     public static float awtCharSize;
+    public static float renderOffset;
 
     public void init(File configFile) {
         if (config == null) {
@@ -57,6 +58,7 @@ public class Config {
         smoothRangeMin = config.getFloat("smoothRangeMin", Configuration.CATEGORY_GENERAL, 0f, 0.0f, 1.0f, "平滑最小参数");
         smoothRangeMax = config.getFloat("smoothRangeMax", Configuration.CATEGORY_GENERAL, 1f, 0.0f, 1.0f, "平滑最大参数");
         awtCharSize = config.getFloat("awtCharSize", Configuration.CATEGORY_GENERAL, 64f, 0.0f, Float.MAX_VALUE, "awt字体分辨率");
+        renderOffset = config.getFloat("renderOffset", Configuration.CATEGORY_GENERAL, 0.1f, -Float.MAX_VALUE, Float.MAX_VALUE, "字符渲染偏移(前后偏移)");
 
         if (config.hasChanged()) {
             config.save();
