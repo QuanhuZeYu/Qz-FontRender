@@ -21,8 +21,8 @@ public class MixinMinecraft {
     public void perTick(CallbackInfo callbackInfo) {
         Minecraft mc = ((Minecraft)((Object)this));
         if (qz_FontRender$replaceFontRender == null) {
-            qz_FontRender$replaceFontRender = new ReplaceFontRender(mc.gameSettings, mc.fontRenderer.locationFontTexture, mc.renderEngine, false,
-                    2048, 2048, 64, 64, 3, 64*0.8f);
+            qz_FontRender$replaceFontRender = new ReplaceFontRender(mc.gameSettings, mc.fontRenderer.locationFontTexture, mc.renderEngine, false
+            );
         }
 
         if (!(mc.fontRenderer instanceof ReplaceFontRender)) {

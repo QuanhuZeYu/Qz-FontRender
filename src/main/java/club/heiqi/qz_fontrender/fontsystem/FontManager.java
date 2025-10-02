@@ -34,6 +34,12 @@ public class FontManager {
         // loadInstalledFontsTTF();
     }
 
+    public void reload(float fontSize) {
+        this.fontSize = fontSize;
+        fonts.clear();
+        loadAssetsFontsTTF();
+    }
+
     public Font findSuitable(int codepoint, int type) {
         for (Font font : fonts) {
             if (type == PageManager.NORMAL && !font.getName().toLowerCase().contains("bold") && checkFontCanDisplay(font, codepoint)) {

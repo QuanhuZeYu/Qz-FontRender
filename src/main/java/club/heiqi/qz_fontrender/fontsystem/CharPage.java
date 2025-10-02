@@ -2,12 +2,16 @@ package club.heiqi.qz_fontrender.fontsystem;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
-import java.util.HashSet;
 
 public class CharPage {
     public static Logger LOG = LogManager.getLogger();
@@ -85,6 +89,51 @@ public class CharPage {
 
     public void dispose() {
         GL11.glDeleteTextures(textureID);
+        chars.clear();
+    }
+
+    public void debug_saveImage() {
+        BufferedImage image = retrieveImageFromGPU();
+        File savePath = new File("images");
+        try {
+            if (!savePath.exists()) {
+                boolean mkdirs = savePath.mkdirs();
+            }
+            // 如果无法从文件名确定格式，使用PNG格式并添加后缀
+            File pngFile = new File(savePath, textureID + ".png");
+            ImageIO.write(image, "PNG", pngFile);
+
+        } catch (IOException e) {
+            LOG.error("Failed to save image: {}", savePath, e);
+        } catch (IllegalArgumentException e) {
+            LOG.error("Unsupported image format: {}", savePath, e);
+        }
+    }
+
+    // 从GPU纹理中读取图像数据
+    private BufferedImage retrieveImageFromGPU() {
+        // 绑定纹理
+        GL11.glBindTexture(GL11.GL_TEXTURE_2D, textureID);
+
+        // 创建缓冲区来存储纹理数据
+        ByteBuffer buffer = BufferUtils.createByteBuffer(textureSize * textureSize * 4);
+        GL11.glGetTexImage(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, buffer);
+
+        // 创建BufferedImage并填充数据
+        BufferedImage image = new BufferedImage(textureSize, textureSize, BufferedImage.TYPE_INT_ARGB);
+        for (int y = 0; y < textureSize; y++) {
+            for (int x = 0; x < textureSize; x++) {
+                int i = (y * textureSize + x) * 4;
+                int r = buffer.get(i) & 0xFF;
+                int g = buffer.get(i + 1) & 0xFF;
+                int b = buffer.get(i + 2) & 0xFF;
+                int a = buffer.get(i + 3) & 0xFF;
+                int argb = (a << 24) | (r << 16) | (g << 8) | b;
+                image.setRGB(x, y, argb);
+            }
+        }
+
+        return image;
     }
 
 

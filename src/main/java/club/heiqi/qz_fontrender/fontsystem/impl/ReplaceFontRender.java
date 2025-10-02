@@ -8,37 +8,50 @@ import com.ibm.icu.text.Bidi;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.texture.TextureManager;
+import net.minecraft.client.resources.IReloadableResourceManager;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.settings.GameSettings;
 import net.minecraft.util.ResourceLocation;
-import org.joml.Vector2f;
 import org.joml.Vector3d;
 import org.joml.Vector4f;
 import org.lwjgl.opengl.GL11;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public class ReplaceFontRender extends FontRenderer {
     public static final float DEFAULT_CHAR_WIDTH = 9f;
-    public float curCharWidth;
+    public float curCharSize;
     public float saveR, saveG, saveB, saveA;
     public BatchRenderFont batchRenderer = new BatchRenderFont();
 
-    public ReplaceFontRender(GameSettings gameSettings, ResourceLocation location, TextureManager manager, boolean b,
-                             int textureWidth, int textureHeight, int charWidth, int charHeight, int maintainPool,
-                             float fontSize
+    public ReplaceFontRender(GameSettings gameSettings, ResourceLocation location, TextureManager manager, boolean b
     ) {
         super(gameSettings, location, manager, b);
-        curCharWidth = Config.charSize;
+        curCharSize = Config.charSize;
+        registerResourceManager();
+    }
+
+    public void registerResourceManager() {
+        Minecraft minecraft = Minecraft.getMinecraft();
+        try {
+            Field field = minecraft.getClass().getDeclaredField("mcResourceManager");
+            field.setAccessible(true);
+            IReloadableResourceManager manager = (IReloadableResourceManager) field.get(minecraft);
+            manager.registerReloadListener(this);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
-    public void onResourceManagerReload(IResourceManager p_110549_1_) {
-
+    public void onResourceManagerReload(@Nullable IResourceManager p_110549_1_) {
+        PageManager.getInstance().reload((int) (Config.awtCharSize * 64), (int) Config.awtCharSize);
     }
 
 
@@ -141,7 +154,7 @@ public class ReplaceFontRender extends FontRenderer {
                     width += Config.spaceWidth;
                 } else {
                     CharInfo info = page.getCharInfo(codepoint);  // 流程不错的情况下info不为null
-                    width += ((info.advance / info.width) * this.curCharWidth) + Config.characterSpacing;
+                    width += ((info.advance / info.width) * this.curCharSize) + Config.characterSpacing;
                 }
 
                 i += Character.charCount(codepoint);
@@ -161,7 +174,7 @@ public class ReplaceFontRender extends FontRenderer {
             return (int) Config.spaceWidth;
         }
         CharInfo info = page.getCharInfo(codepoint);
-        return (int) Math.ceil(info.advance/info.width*this.curCharWidth + Config.characterSpacing);
+        return (int) Math.ceil(info.advance/info.width*this.curCharSize + Config.characterSpacing);
     }
 
     @Override
@@ -271,7 +284,7 @@ public class ReplaceFontRender extends FontRenderer {
             }
             else {
                 CharInfo info = page.getCharInfo(codepoint);  // info不可为null
-                width += ((info.advance / info.width) * this.curCharWidth) + Config.characterSpacing;
+                width += ((info.advance / info.width) * this.curCharSize) + Config.characterSpacing;
             }
 
             // 检查长度
@@ -393,7 +406,7 @@ public class ReplaceFontRender extends FontRenderer {
                     // 处理随机化的情况
                     if (randomStyle) {
                         // 直接使用原始的字宽而不是随机的字宽
-                        width = ((info.advance / info.width) * this.curCharWidth) + Config.characterSpacing;
+                        width = ((info.advance / info.width) * this.curCharSize) + Config.characterSpacing;
                         float randomWidth = 0;
                         int randomCharCodepoint;
                         do {
@@ -411,12 +424,12 @@ public class ReplaceFontRender extends FontRenderer {
                         info = replacePage == null ? page.getCharInfo(codepoint) : replacePage.getCharInfo(randomCharCodepoint);
                     }
                     else {
-                        width = ((info.advance / info.width) * this.curCharWidth) + Config.characterSpacing;
+                        width = ((info.advance / info.width) * this.curCharSize) + Config.characterSpacing;
                     }
 
                     // TODO 实际渲染环节
                     // batchRenderer.collect(posX, posY, curCharWidth, curCharWidth, page, info, color, italicStyle);
-                    batchRenderer.collectRender(posX, posY, curCharWidth, page, info, color, italicStyle);
+                    batchRenderer.collectRender(posX, posY, curCharSize, page, info, color, italicStyle);
                 }
 
                 collectDraw(width, lineInfo);
@@ -457,17 +470,17 @@ public class ReplaceFontRender extends FontRenderer {
     public ArrayList<LineInfo> lineInfos = new ArrayList<>();
     private void collectDraw(float width, LineInfo lineInfo) {
         if (this.underlineStyle) {
-            lineInfo.addVertex(new Vector3d((this.posX), (this.posY + this.curCharWidth), 0.0d))
-                    .addVertex(new Vector3d((this.posX + width), (this.posY + this.curCharWidth), 0.0d))
-                    .addVertex(new Vector3d((this.posX + width), (this.posY + this.curCharWidth - 1.0d), 0.0d))
-                    .addVertex(new Vector3d((this.posX), (this.posY + this.curCharWidth - 1.0d), 0.0d));
+            lineInfo.addVertex(new Vector3d((this.posX), (this.posY + this.curCharSize), 0.0d))
+                    .addVertex(new Vector3d((this.posX + width), (this.posY + this.curCharSize), 0.0d))
+                    .addVertex(new Vector3d((this.posX + width), (this.posY + this.curCharSize - 1.0d), 0.0d))
+                    .addVertex(new Vector3d((this.posX), (this.posY + this.curCharSize - 1.0d), 0.0d));
             lineInfos.add(lineInfo);
         }
         if (this.strikethroughStyle) {
-            lineInfo.addVertex(new Vector3d((this.posX), this.posY + (this.curCharWidth / 2) - 0.5, 0.0d))
-                    .addVertex(new Vector3d((this.posX + width), this.posY + (this.curCharWidth / 2) - 0.5, 0.0d))
-                    .addVertex(new Vector3d(new Vector3d((this.posX + width), this.posY + (this.curCharWidth / 2) + 0.5, 0.0d)))
-                    .addVertex(new Vector3d(new Vector3d((this.posX), this.posY + (this.curCharWidth / 2) + 0.5, 0.0d)));
+            lineInfo.addVertex(new Vector3d((this.posX), this.posY + (this.curCharSize / 2) - 0.5, 0.0d))
+                    .addVertex(new Vector3d((this.posX + width), this.posY + (this.curCharSize / 2) - 0.5, 0.0d))
+                    .addVertex(new Vector3d(new Vector3d((this.posX + width), this.posY + (this.curCharSize / 2) + 0.5, 0.0d)))
+                    .addVertex(new Vector3d(new Vector3d((this.posX), this.posY + (this.curCharSize / 2) + 0.5, 0.0d)));
             lineInfos.add(lineInfo);
         }
 
@@ -504,6 +517,7 @@ public class ReplaceFontRender extends FontRenderer {
      * 返回当前X坐标位置 即光标位置
      */
     private int renderString(String text, int x, int y, int color, boolean shadow) {
+        setCharSize(Config.charSize);
         float fx = x;
         float fy = y;
         if (text == null) {
@@ -601,7 +615,7 @@ public class ReplaceFontRender extends FontRenderer {
 
         for (String s1 : list) {
             renderStringAligned(s1, x, y, wrapWidth, this.textColor, addShadow);
-            y += (int) Math.ceil(this.curCharWidth + Config.lineSpacing);
+            y += (int) Math.ceil(this.curCharSize + Config.lineSpacing);
         }
     }
 
@@ -648,7 +662,7 @@ public class ReplaceFontRender extends FontRenderer {
             }
             else {
                 CharInfo info = page.getCharInfo(codepoint);
-                width += info.advance / info.width * this.curCharWidth + Config.characterSpacing;
+                width += info.advance / info.width * this.curCharSize + Config.characterSpacing;
             }
             if (width > wrapWidth) {
                 builder.append("\n");
@@ -662,12 +676,11 @@ public class ReplaceFontRender extends FontRenderer {
     }
 
     public void setCharSize(float size) {
-        this.curCharWidth = size;
-        this.FONT_HEIGHT = (int) Math.ceil(curCharWidth);
+        this.curCharSize = size;
+        this.FONT_HEIGHT = (int) Math.ceil(curCharSize);
     }
 
     public void resetCharSize() {
-        this.curCharWidth = Config.charSize;
-        this.FONT_HEIGHT = (int) Math.ceil(curCharWidth);
+        setCharSize(Config.charSize);
     }
 }

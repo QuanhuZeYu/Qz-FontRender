@@ -29,6 +29,16 @@ public class CharImageGenerator {
     public ConcurrentHashMap<Integer, ImageAndInfo> normalResults = new ConcurrentHashMap<>(),
             boldResults = new ConcurrentHashMap<>();
 
+    public void reload() {
+        fontManager.reload(Config.awtCharSize * 0.8f);
+
+        normalConsumerHashMap.clear();
+        boldConsumerHashMap.clear();
+
+        normalResults.clear();
+        boldResults.clear();
+    }
+
     public ImageAndInfo generate(int codepoint, int type, int charSize) {
         Font font = fontManager.findSuitable(codepoint, type);
         String s = new String(Character.toChars(codepoint));

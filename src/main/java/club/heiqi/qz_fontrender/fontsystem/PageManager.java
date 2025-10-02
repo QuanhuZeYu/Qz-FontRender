@@ -40,6 +40,35 @@ public class PageManager {
     public int textureSize, charSize;
     public int maintain = 3;
 
+    public void reload(int textureSize, int charSize) {
+        this.textureSize = textureSize;
+        this.charSize = charSize;
+
+
+
+        ((ClientProxy)MyMod.proxy).generator.reload();
+
+        for (CharPage page : normalPage) {
+            page.dispose();
+        }
+        for (CharPage page : boldPage) {
+            page.dispose();
+        }
+        normalPage.clear();
+        boldPage.clear();
+
+        normalInGen.clear();
+        boldInGen.clear();
+
+        normalChar.clear();
+        boldChar.clear();
+
+        normalCache.invalidateAll();
+        boldCache.invalidateAll();
+
+    }
+
+
     public PageManager(int textureSize, int charSize) {
         this.textureSize = textureSize;
         this.charSize = charSize;
@@ -178,5 +207,14 @@ public class PageManager {
         boldInGen.remove(codepoint);
         // 加入缓存
         boldCache.put(codepoint, page);
+    }
+
+    public void debug_saveImage() {
+        for (CharPage page : normalPage) {
+            page.debug_saveImage();
+        }
+        for (CharPage page : boldPage) {
+            page.debug_saveImage();
+        }
     }
 }
