@@ -1,4 +1,4 @@
-<img width="2560" height="1392" alt="a229ac33c0262929b0613ea78e139dbb" src="https://github.com/user-attachments/assets/09822b30-a418-4586-9df9-b31b88a344fe" /># Qz-FontRender
+# Qz-FontRender
 
 一个高性能、跨语种支持的字体渲染引擎，完整支持 Unicode 多语种平面，带来流畅且多样的字体显示体验。现在，在 Minecraft 中轻松使用 Emoji 和各种特殊字符！
 
