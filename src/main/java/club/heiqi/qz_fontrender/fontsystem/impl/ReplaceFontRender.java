@@ -39,14 +39,7 @@ public class ReplaceFontRender extends FontRenderer {
 
     public void registerResourceManager() {
         Minecraft minecraft = Minecraft.getMinecraft();
-        try {
-            Field field = minecraft.getClass().getDeclaredField("mcResourceManager");
-            field.setAccessible(true);
-            IReloadableResourceManager manager = (IReloadableResourceManager) field.get(minecraft);
-            manager.registerReloadListener(this);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        minecraft.mcResourceManager.registerReloadListener(this);
     }
 
     @Override
