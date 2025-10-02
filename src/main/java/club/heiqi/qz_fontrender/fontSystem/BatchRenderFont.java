@@ -113,10 +113,10 @@ public class BatchRenderFont {
             float blue = (float) (inColor & 255) / 255;
 
             float[] vertex = new float[] {
-                    italic ? x+2 : x, y, 0,
-                    x, y+charSize, 0,
-                    x+charSize, y+charSize, 0,
-                    italic ? x+charSize+2 : x+charSize, y, 0
+                    italic ? x+2 : x, y, Config.renderOffset,
+                    x, y+charSize, Config.renderOffset,
+                    x+charSize, y+charSize, Config.renderOffset,
+                    italic ? x+charSize+2 : x+charSize, y, Config.renderOffset
             };
             float[] texCoord = new float[] {
                     u0, v0, u0, v1, u1, v1, u1, v0,
