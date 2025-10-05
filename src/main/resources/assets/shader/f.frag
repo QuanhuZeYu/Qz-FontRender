@@ -1,10 +1,8 @@
 #version 120
 
-// GLSL 120 使用 varying 接收
 varying vec2 texCoord;
 varying vec4 Color;
 
-// 输出颜色通过内置变量 gl_FragColor 实现，不需要 out 声明
 
 uniform sampler2D SamTex;
 uniform vec4 uvBounds = vec4(0.0, 0.0, 1.0, 1.0);
@@ -18,7 +16,6 @@ const float PI = 3.14159265359;
 
 const float INV_SQRT_2PI = 0.3989422804014327;
 float sigmaSquared;
-// float normalizationFactor; // 未使用，保持不变
 
 vec4 safeSampler(sampler2D tex, vec2 uv) {
     if (uv.x < uvBounds.x || uv.x > uvBounds.z || uv.y < uvBounds.y || uv.y > uvBounds.w) {
@@ -43,8 +40,6 @@ vec4 gaussianBlur(sampler2D tex, vec2 uv, vec2 texelSize) {
     float stepScale = blurRadius;
     vec2 baseStep = texelSize * stepScale;
 
-    // GLSL 120/130 对循环变量的限制较多，但此处的循环结构是安全的。
-    // 注意：循环中的 float(i) 转换是必要的，因为循环变量 i 是 int。
     for (int i = -sampleRadius; i <= sampleRadius; ++i) {
         for (int j = -sampleRadius; j <= sampleRadius; ++j) {
 
@@ -72,11 +67,10 @@ vec4 gaussianBlur(sampler2D tex, vec2 uv, vec2 texelSize) {
 void main() {
     sigmaSquared = sigma * sigma;
 
-    vec2 texelSize = 1.0 / textureSize; // 将整数 1 更改为 1.0，确保浮点除法
+    vec2 texelSize = 1.0 / textureSize;
     vec4 sampleColor = gaussianBlur(SamTex, texCoord, texelSize);
 
     sampleColor.a = smoothstep(smoothRange.x, smoothRange.y, sampleColor.a);
 
-    // 将结果写入内置变量
     gl_FragColor = vec4(sampleColor.rgb * Color.rgb, sampleColor.a);
 }
