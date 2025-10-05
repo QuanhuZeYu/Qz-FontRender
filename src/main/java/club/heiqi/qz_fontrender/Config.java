@@ -31,6 +31,8 @@ public class Config {
     public static double awtCharSize;
     public static double renderOffset;
 
+    public static String[] fontSort = {};
+
     public void init(File configFile) {
         if (config == null) {
             configPath = configFile.getAbsolutePath();
@@ -59,6 +61,8 @@ public class Config {
         smoothRangeMax = config.get(Configuration.CATEGORY_GENERAL, "smoothRangeMax", 1.0, "平滑最大参数", 0.0, 1.0).getDouble();
         awtCharSize = config.get(Configuration.CATEGORY_GENERAL, "awtCharSize", 64.0, "awt字体分辨率", 0.0, Double.MAX_VALUE).getDouble();
         renderOffset = config.get(Configuration.CATEGORY_GENERAL, "renderOffset", 0.1, "字符渲染偏移(前后偏移)", -Double.MAX_VALUE, Double.MAX_VALUE).getDouble();
+
+        fontSort = config.get(Configuration.CATEGORY_GENERAL, "fontSort", fontSort).getStringList();
 
         // 设置字体大小
         ReplaceFontRender fontRender = ReplaceFontRender.getInstance();

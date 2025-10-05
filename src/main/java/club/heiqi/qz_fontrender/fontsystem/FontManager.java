@@ -1,5 +1,6 @@
 package club.heiqi.qz_fontrender.fontsystem;
 
+import club.heiqi.qz_fontrender.Config;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -30,6 +31,8 @@ public class FontManager {
         loadAssetsFontsTTF();
         // 不再载入系统字体保持可控性
         loadInstalledFontsTTF();
+        // 对字体进行排序
+        sortFont();
     }
 
     public void reload(float fontSize) {
@@ -81,7 +84,6 @@ public class FontManager {
                         name.toLowerCase().endsWith(".ttc"));
 
         if (fontFiles != null) {
-            sortFont(fontFiles); // 先排序再加载
             loadTTF(fontFiles);
         }
     }
@@ -131,42 +133,67 @@ public class FontManager {
         return true;
     }
 
+    /**
+     * 尽可能按照 Config.fontSort 数组中定义的顺序对字体进行排序。
+     * 排序目标中的字体会排在前面，并按目标顺序排列。
+     * 不在目标中的字体会排在后面，并保持相对顺序（稳定排序）。
+     */
+    public void sortFont() {
+        // 如果配置中没有值不进行排序
+        if (Config.fontSort.length < 1) return;
+
+        String[] sortTarget = Config.fontSort;
+        // 待排序数组，排序完后将fonts字段设置为排序后的
+        ArrayList<Font> toSort = new ArrayList<>(fonts);
+
+        // 1. 创建一个映射，将目标字体名称映射到它们的期望顺序（索引）
+        Map<String, Integer> sortOrder = new HashMap<>();
+        for (int i = 0; i < sortTarget.length; i++) {
+            // 索引 i + 1 作为排序权重，因为 0 可能会与未在目标中的字体混淆
+            sortOrder.put(sortTarget[i], i + 1);
+        }
+
+        // 2. 使用自定义 Comparator 对 toSort 列表进行排序
+        toSort.sort(new Comparator<Font>() {
+            @Override
+            public int compare(Font font1, Font font2) {
+                String name1 = font1.getName();
+                String name2 = font2.getName();
+
+                // 获取两个字体的排序权重。如果不在 sortOrder 中，则权重设为 0（或一个很大的数）
+                // 约定：目标字体权重从 1 开始，非目标字体权重为 Integer.MAX_VALUE
+                int weight1 = sortOrder.getOrDefault(name1, Integer.MAX_VALUE);
+                int weight2 = sortOrder.getOrDefault(name2, Integer.MAX_VALUE);
+
+                // 比较权重
+                if (weight1 != weight2) {
+                    // 权重较小的（在目标数组中索引靠前的）排在前面
+                    return Integer.compare(weight1, weight2);
+                } else {
+                    // 如果权重相同 (都属于目标字体，但不在目标数组中，或者都不是目标字体)
+
+                    // 特别地：如果它们都是目标字体 (weight1 != Integer.MAX_VALUE)，
+                    // 它们应该已经在上面的比较中按照目标顺序排列了。
+                    // 如果它们都不是目标字体 (weight1 == Integer.MAX_VALUE)，
+                    // 保持它们在原列表中的相对顺序（为了实现稳定排序，可以使用字体名称进行二次排序，
+                    // 或依赖于 Java 8+ 的 List.sort/Collections.sort 的稳定特性，
+                    // 但这里我们使用名称作为后备比较）
+
+                    // 以字体名称的字典序作为次要排序键，确保排序结果的一致性。
+                    return name1.compareTo(name2);
+                }
+            }
+        });
+
+        // 3. 更新类中的 fonts 字段为排序后的列表
+        this.fonts.clear();
+        this.fonts.addAll(toSort);
+    }
+
     public void reload() {
         fonts.clear();
         loadAssetsFontsTTF();
         // loadInstalledFontsTTF();
-    }
-
-    /**
-     * 字体文件按照名称排序
-     * 优先按数字前缀排序，其次按字母顺序排序
-     */
-    public void sortFont(File[] files) {
-        Arrays.sort(files, (f1, f2) -> {
-            String name1 = f1.getName();
-            String name2 = f2.getName();
-
-            // 提取文件名中的数字前缀
-            Integer num1 = extractLeadingNumber(name1);
-            Integer num2 = extractLeadingNumber(name2);
-
-            // 如果都有数字前缀，按数字大小排序
-            if (num1 != null && num2 != null) {
-                int numCompare = Integer.compare(num1, num2);
-                if (numCompare != 0) {
-                    return numCompare;
-                }
-            }
-            // 如果只有一个有数字前缀，有数字的排在前面
-            else if (num1 != null) {
-                return -1;
-            } else if (num2 != null) {
-                return 1;
-            }
-
-            // 如果都没有数字前缀或数字相同，按字母顺序排序
-            return name1.compareToIgnoreCase(name2);
-        });
     }
 
     /**

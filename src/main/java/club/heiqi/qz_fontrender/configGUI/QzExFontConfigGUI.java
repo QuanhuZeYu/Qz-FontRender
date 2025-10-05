@@ -1,5 +1,6 @@
 package club.heiqi.qz_fontrender.configGUI;
 
+import club.heiqi.qz_fontrender.Config;
 import club.heiqi.qz_fontrender.fontsystem.CharImageGenerator;
 import club.heiqi.qz_fontrender.fontsystem.FontManager;
 import club.heiqi.qz_fontrender.fontsystem.impl.ReplaceFontRender;
@@ -9,6 +10,7 @@ import club.heiqi.qz_uilib.widget.layout.HorizontalLayout;
 import club.heiqi.qz_uilib.widget.layout.VerticalLayout;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
+import net.minecraftforge.common.config.Configuration;
 import org.lwjgl.opengl.Display;
 
 import java.awt.*;
@@ -132,13 +134,42 @@ public class QzExFontConfigGUI extends BaseGUI {
         final ListWidget cacheList = createFontList();
         root.addChild(fontList);
 
+        // 应用按钮
         ButtonWithTextWidget applyButton = new ButtonWithTextWidget().setText("应用配置");
         applyButton.perfectWidth = -1;
         applyButton.setCallBack(() -> {
             ReplaceFontRender.getInstance().reload(false);
             initGui();
         });
-        root.addChild(applyButton);
+
+        // 保存排序列表
+        ButtonWithTextWidget saveSort = new ButtonWithTextWidget().setText("保存排序");
+        saveSort.perfectWidth = -1;
+        saveSort.setCallBack(() -> {
+            ArrayList<String> sortResult = new ArrayList<>();
+            for (Widget child : fontList.children) {
+                if (child.children.isEmpty()) continue;
+                for (Widget widget : child.children) {
+                    if (widget instanceof LabelWidget labelWidget) {
+                        sortResult.add(labelWidget.text);
+                    }
+                }
+            }
+            String[] fontSort = new String[sortResult.size()];
+            for (int i = 0; i < sortResult.size(); i++) {
+                fontSort[i] = sortResult.get(i);
+            }
+            Config.fontSort = fontSort;
+            Config.config.get(Configuration.CATEGORY_GENERAL, "fontSort", fontSort).set(fontSort);
+            Config.config.save();
+        });
+
+        // 应用 - 保存 组件组
+        Widget applySaveGroup = new Widget().setLayout(new HorizontalLayout());
+        applySaveGroup.addChild(applyButton)
+                .addChild(saveSort)
+                .setPerfectHeight(Arrays.asList(applyButton, saveSort));
+        root.addChild(applySaveGroup);
 
         // 搜索栏回调
         searchWidget.setTextChangeCallBack((string) -> {
