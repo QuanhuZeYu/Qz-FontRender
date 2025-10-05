@@ -1,10 +1,7 @@
 package club.heiqi.qz_fontrender.fontsystem;
 
 import club.heiqi.qz_fontrender.Config;
-
 import club.heiqi.qz_fontrender.fontsystem.shader.ShaderManager;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.ScaledResolution;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.joml.Matrix4f;
@@ -21,55 +18,79 @@ import java.nio.IntBuffer;
 public class RenderTool {
     public static Logger LOG = LogManager.getLogger();
     public static RenderTool instance;
+    public static ShaderManager shaderManager;
 
     public static RenderTool getInstance() {
         if (instance == null) {
             instance = new RenderTool();
         }
+        if (shaderManager == null) {
+            shaderManager = new ShaderManager()
+                    .loadFromJar("assets/shader/v.vert","assets/shader/f.frag", null);
+        }
         return instance;
     }
 
-    public ShaderManager shaderManager;
+    public static ShaderManager getShaderManagerInstance() {
+        if (shaderManager == null) {
+            shaderManager = new ShaderManager()
+                    .loadFromJar("assets/shader/v.vert","assets/shader/f.frag", null);
+        }
+        return shaderManager;
+    }
+
+    // VBO: 顶点缓冲对象 | EBO: 索引缓冲对象
+    // VAO: 顶点数组对象，在现代OpenGL中必须使用
     public int vao, vbo, tbo, cbo, ebo;
 
     public RenderTool() {
         init();
     }
 
+    /**
+     * 初始化 VAO, VBO、TBO、CBO、EBO。
+     */
+    /**
+     * 初始化 VAO, VBO、TBO、CBO、EBO，并设置属性指针和启用属性。
+     */
     public void init() {
-        // vao == 0 || vbo == 0 || ebo == 0 增加 cbo != 0 的检查
-        if (vao == 0 || vbo == 0 || tbo == 0 || cbo == 0 || ebo == 0) {
+        // 检查 VAO, VBO, TBO, CBO, EBO
+        if (vbo == 0 || tbo == 0 || cbo == 0 || ebo == 0 || vao == 0) {
+
+            // 1. 创建 VAO
             vao = GL30.glGenVertexArrays();
-            GL30.glBindVertexArray(vao);
+            GL30.glBindVertexArray(vao); // 绑定 VAO，所有后续操作将记录到此 VAO
 
-            // 顶点 (位置) VBO - 属性索引 0 (3个float: x, y, z)
-            vbo = GL15.glGenBuffers();
+            // 2. 创建 VBOs
+            vbo = GL15.glGenBuffers(); // 顶点 (位置) VBO
+            tbo = GL15.glGenBuffers(); // 纹理坐标 TBO
+            cbo = GL15.glGenBuffers(); // 颜色 CBO
+            ebo = GL15.glGenBuffers(); // 索引 EBO
+
+            // --- VBOs 绑定和属性设置 (一次性完成) ---
+
+            // VBO 0: 顶点位置 (Location 0, 3分量)
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
-            GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 0, 0);
+            GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 0, 0L);
+            GL20.glEnableVertexAttribArray(0); // 启用属性！
 
-            // 纹理坐标 TBO - 属性索引 1 (2个float: u, v)
-            tbo = GL15.glGenBuffers();
+            // VBO 1: 纹理坐标 (Location 1, 2分量)
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, tbo);
-            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 0, 0);
+            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 0, 0L);
+            GL20.glEnableVertexAttribArray(1); // 启用属性！
 
-            // **新增：颜色 CBO - 属性索引 2 (4个float: r, g, b, a)**
-            cbo = GL15.glGenBuffers();
+            // VBO 2: 颜色 (Location 2, 4分量)
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, cbo);
-            GL20.glVertexAttribPointer(2, 4, GL11.GL_FLOAT, false, 0, 0); // 颜色通常是 R G B A (4分量)
+            GL20.glVertexAttribPointer(2, 4, GL11.GL_FLOAT, false, 0, 0L);
+            GL20.glEnableVertexAttribArray(2); // 启用属性！
 
-            // 索引 EBO
-            ebo = GL15.glGenBuffers();
+            // EBO 绑定 (索引)
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ebo);
 
+            // 解绑：解除 VAO 绑定，同时也会解除 EBO 的绑定（如果EBO绑定到了VAO），VBO 绑定也解除。
             GL30.glBindVertexArray(0);
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
-            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
-        }
-        if (shaderManager == null) {
-            shaderManager = new ShaderManager().loadFromJar(
-                    "assets/shader/v.vert",
-                    "assets/shader/f.frag",
-                    null);
+            // GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0); // EBO 绑定状态已随 VAO 解除
         }
     }
 
@@ -136,71 +157,140 @@ public class RenderTool {
         }
         return currentBuffer;
     }
-    public void render(FloatBuffer vertexBuffer, FloatBuffer texCoordBuffer, FloatBuffer colorBuffer, IntBuffer indexBuffer, int indexLength) {
-        setUniform();
+    /**
+     * 渲染方法，使用固定管线和 VBO (Vertex Buffer Object)。
+     * * @param vertex 顶点位置数据 (x, y, z)
+     * @param uv 纹理坐标数据 (u, v)
+     * @param color 颜色数据 (r, g, b, a)
+     * @param index 索引数据
+     */
+    /**
+     * 渲染方法，使用可编程管线和 VAO/VBO。
+     * @param vertex 顶点位置数据 (x, y, z)
+     * @param uv 纹理坐标数据 (u, v)
+     * @param color 颜色数据 (r, g, b, a)
+     * @param index 索引数据
+     */
+    public void render(float[] vertex, float[] uv, float[] color, int[] index) {
+        // ... (Buffer 清除和扩容代码保持不变) ...
 
+        // 1. 激活着色器 (保留)
+        int previousShader = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
+        GL20.glUseProgram(shaderManager.shaderProgramID);
+
+        // 2. 绑定 VAO
         GL30.glBindVertexArray(vao);
 
-        // 1. 顶点 (位置)
+        // --- 数据上传到 VBOs (只需上传数据，不需要再设置属性指针) ---
+
+        // 1. 顶点
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
+        vertexBuffer = checkAndResizeBuffer(vertexBuffer, vertex.length, "顶点");
+        vertexBuffer.put(vertex).flip();
         GL15.glBufferData(GL15.GL_ARRAY_BUFFER, vertexBuffer, GL15.GL_DYNAMIC_DRAW);
+        // !!! 删除：GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 0, 0L);
+        // !!! 删除：GL20.glEnableVertexAttribArray(0);
 
         // 2. 纹理坐标
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, tbo);
-        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, texCoordBuffer, GL15.GL_DYNAMIC_DRAW);
-
-        // **3. 新增：颜色**
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, cbo);
-        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, colorBuffer, GL15.GL_DYNAMIC_DRAW);
-
-        // 4. 索引
-        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ebo);
-        GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, indexBuffer, GL15.GL_DYNAMIC_DRAW);
-
-        // 启用属性数组
-        GL20.glEnableVertexAttribArray(0); // 顶点
-        GL20.glEnableVertexAttribArray(1); // 纹理坐标
-        GL20.glEnableVertexAttribArray(2); // **新增：颜色**
-
-        GL11.glDrawElements(GL11.GL_TRIANGLES, indexLength, GL11.GL_UNSIGNED_INT, 0);
-
-        // 禁用属性数组
-        GL20.glDisableVertexAttribArray(0);
-        GL20.glDisableVertexAttribArray(1);
-        GL20.glDisableVertexAttribArray(2); // **新增：颜色**
-
-        GL30.glBindVertexArray(0);
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
-        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
-    }
-    public void render(float[] vertex, float[] uv, float[] color, int[] index) {
-        vertexBuffer.clear();
-        texCoordBuffer.clear();
-        colorBuffer.clear();
-        indexBuffer.clear();
-
-        // 1. 顶点 (位置)
-        vertexBuffer = checkAndResizeBuffer(vertexBuffer, vertex.length, "顶点");
-        vertexBuffer.put(vertex).flip();
-
-        // 2. 纹理坐标
         texCoordBuffer = checkAndResizeBuffer(texCoordBuffer, uv.length, "纹理坐标");
         texCoordBuffer.put(uv).flip();
+        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, texCoordBuffer, GL15.GL_DYNAMIC_DRAW);
+        // !!! 删除：GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 0, 0L);
+        // !!! 删除：GL20.glEnableVertexAttribArray(1);
 
-        // **3. 新增：颜色**
+        // 3. 颜色
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, cbo);
         colorBuffer = checkAndResizeBuffer(colorBuffer, color.length, "颜色");
         colorBuffer.put(color).flip();
+        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, colorBuffer, GL15.GL_DYNAMIC_DRAW);
+        // !!! 删除：GL20.glVertexAttribPointer(2, 4, GL11.GL_FLOAT, false, 0, 0L);
+        // !!! 删除：GL20.glEnableVertexAttribArray(2);
 
-        // 4. 索引
+        // 4. 索引 EBO
+        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ebo);
         indexBuffer = checkAndResizeBuffer(indexBuffer, index.length, "索引");
         indexBuffer.put(index).flip();
+        GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, indexBuffer, GL15.GL_DYNAMIC_DRAW);
 
-        render(vertexBuffer,texCoordBuffer,colorBuffer,indexBuffer,index.length);
+        // --- Uniform 设置和绘制 (保持不变) ---
+
+        // --- 清理 ---
+
+        // !!! 删除：GL20.glDisableVertexAttribArray(0);
+        // !!! 删除：GL20.glDisableVertexAttribArray(1);
+        // !!! 删除：GL20.glDisableVertexAttribArray(2);
+
+        // 解绑
+        GL30.glBindVertexArray(0);
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0); // EBO 解绑
+        GL20.glUseProgram(previousShader);
+    }
+
+
+    /**
+     * 使用外部提供的 FloatBuffer 和 IntBuffer 中的数据进行渲染。
+     * 此方法直接将外部 Buffer 内容上传到 VBOs/EBO，避免内部数据拷贝。
+     *
+     * ⚠️ 前提条件：
+     * 1. 外部 Buffer 必须已经填充数据，并调用了 .flip()。
+     * 2. VAO 必须已经配置好属性指针 (例如，通过调用 setupAttributes())。
+     * * @param vertexData 包含顶点数据的 FloatBuffer (已flip)
+     * @param uvData 包含纹理坐标数据的 FloatBuffer (已flip)
+     * @param colorData 包含颜色数据的 FloatBuffer (已flip)
+     * @param indexData 包含索引数据的 IntBuffer (已flip)
+     * @param indexDataCount 要绘制的索引数量 (即 indexData.limit())
+     */
+    public void render(
+            FloatBuffer vertexData,
+            FloatBuffer uvData,
+            FloatBuffer colorData,
+            IntBuffer indexData,
+            int indexDataCount) {
+
+        // 1. 记录并激活着色器 (保留)
+        int previousShader = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
+        GL20.glUseProgram(shaderManager.shaderProgramID);
+
+        // 2. 绑定 VAO (加载已配置的属性状态)
+        GL30.glBindVertexArray(vao);
+
+        // --- 数据更新到 VBOs (只更新数据) ---
+
+        // 1. 顶点 VBO
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
+        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, vertexData, GL15.GL_DYNAMIC_DRAW);
+
+        // 2. 纹理坐标 TBO
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, tbo);
+        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, uvData, GL15.GL_DYNAMIC_DRAW);
+
+        // 3. 颜色 CBO
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, cbo);
+        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, colorData, GL15.GL_DYNAMIC_DRAW);
+
+        // 4. 索引 EBO
+        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ebo);
+        GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, indexData, GL15.GL_DYNAMIC_DRAW);
+
+        // --- 绘制 (保持不变) ---
+        GL11.glDrawElements(GL11.GL_TRIANGLES, indexDataCount, GL11.GL_UNSIGNED_INT, 0L);
+
+        // --- 清理 ---
+
+        // 解绑
+        GL30.glBindVertexArray(0);
+        GL20.glUseProgram(previousShader);
+
+        // 额外解绑 GL_ARRAY_BUFFER，避免影响后续操作
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
     }
 
     private final FloatBuffer modelView = BufferUtils.createFloatBuffer(16);
     private final FloatBuffer projection = BufferUtils.createFloatBuffer(16);
-    public void setUniform() {
+    public void setUniform_PipeLine0() {
         modelView.clear(); projection.clear();
         GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, modelView);
         GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, projection);
@@ -209,6 +299,7 @@ public class RenderTool {
         shaderManager.setUniformM4f("modelview", new Matrix4f(modelView));
         shaderManager.setUniformM4f("projection", new Matrix4f(projection));
 
+        shaderManager.setUniformVec2("textureSize", new Vector2f((float) (Config.awtCharSize * 64)));
         shaderManager.setUniformF("sigma", (float) Config.sigma);
         shaderManager.setUniformF("blurRadius", (float) Config.blurRadius);
         shaderManager.setUniformI("sampleRadius", Config.sampleRadius);
