@@ -12,6 +12,7 @@ import net.minecraft.client.gui.GuiScreen;
 import org.lwjgl.opengl.Display;
 
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 public class QzExFontConfigGUI extends BaseGUI {
@@ -81,7 +82,6 @@ public class QzExFontConfigGUI extends BaseGUI {
 
                 // 4. 重新加载 GUI
                 self.initGui();
-
             });
 
             hW2.addChild(tipLabel);
@@ -113,16 +113,51 @@ public class QzExFontConfigGUI extends BaseGUI {
         title.perfectWidth = -1;
         root.addChild(title);
 
+        // 搜索栏
+        Widget searchGroup = new Widget().setPerfectSize(-1,-1);
+        searchGroup.setLayout(new HorizontalLayout());
+        LabelWidget searchTitle = new LabelWidget().setText("搜索字体:");
+        TextEditWidget searchWidget = new TextEditWidget();
+        searchWidget.perfectWidth = -1;
+        searchWidget.setPerfectHeight(Arrays.asList(searchTitle));
+
+        searchGroup.addChild(searchTitle);
+        searchGroup.addChild(searchWidget);
+        searchGroup.setPerfectHeight(Arrays.asList(searchTitle,searchWidget));
+        root.addChild(searchGroup);
+
+        // 字体列表
         ListWidget fontList = createFontList();
+        // 用于搜索备份
+        final ListWidget cacheList = createFontList();
         root.addChild(fontList);
 
         ButtonWithTextWidget applyButton = new ButtonWithTextWidget().setText("应用配置");
         applyButton.perfectWidth = -1;
         applyButton.setCallBack(() -> {
-            ReplaceFontRender.getInstance().reload();
+            ReplaceFontRender.getInstance().reload(false);
             initGui();
         });
         root.addChild(applyButton);
+
+        // 搜索栏回调
+        searchWidget.setTextChangeCallBack((string) -> {
+            // list下的每个元素 1->水平组件->2->标题+水平组件
+            ArrayList<Widget> results = new ArrayList<>();
+            for (Widget child : cacheList.children) {
+                if (child.children.isEmpty()) continue;
+                // 查看水平组件的子组件
+                for (Widget widget : child.children) {
+                    if (widget instanceof LabelWidget labelWidget) {
+                        if (labelWidget.text.contains(string)) {
+                            results.add(child);
+                        }
+                    }
+                }
+            }
+            fontList.children.clear();
+            fontList.children.addAll(results);
+        });
     }
 
     protected void keyTyped(char typedChar, int keyCode) {

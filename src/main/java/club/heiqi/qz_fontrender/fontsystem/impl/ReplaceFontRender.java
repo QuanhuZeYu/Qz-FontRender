@@ -52,10 +52,11 @@ public class ReplaceFontRender extends FontRenderer {
 
     @Override
     public void onResourceManagerReload(@Nullable IResourceManager p_110549_1_) {
-        reload();
+        reload(true);
     }
-    public void reload() {
+    public void reload(boolean reloadFontManager) {
         PageManager.getInstance().reload((int) (Config.awtCharSize * 64), (int) Config.awtCharSize);
+        CharImageGenerator.getInstance().reload(reloadFontManager);
     }
 
 

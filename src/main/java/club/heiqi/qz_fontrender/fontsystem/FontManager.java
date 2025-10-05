@@ -15,42 +15,41 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashSet;
+import java.util.*;
 import java.util.List;
 
 public class FontManager {
     public static Logger LOG = LogManager.getLogger();
     public float fontSize;
     /**存储所有可用的awt字体对象*/
-    public LinkedHashSet<Font> fonts = new LinkedHashSet<>();
+    public final LinkedHashSet<Font> fonts = new LinkedHashSet<>();
 
     public FontManager(float fontSize) {
         this.fontSize = fontSize;
-        initFontAssets();
+        // initFontAssets();
         loadAssetsFontsTTF();
         // 不再载入系统字体保持可控性
-        // loadInstalledFontsTTF();
+        loadInstalledFontsTTF();
     }
 
     public void reload(float fontSize) {
         this.fontSize = fontSize;
-        LinkedHashSet<Font> fontsLocal = new LinkedHashSet<>();
+        ArrayList<Font> collect = new ArrayList<>();
         for (Font font : fonts) {
-            Font deriveFont = font.deriveFont(fontSize);
-            fontsLocal.add(deriveFont);
+            font = font.deriveFont(fontSize);
+            collect.add(font);
         }
-        fonts = fontsLocal;
+        fonts.clear();
+        fonts.addAll(collect);
     }
 
     public Font findSuitable(int codepoint, int type) {
         for (Font font : fonts) {
             if (type == PageManager.NORMAL && !font.getName().toLowerCase().contains("bold") && checkFontCanDisplay(font, codepoint)) {
-                return font.deriveFont(Font.PLAIN);
+                return font;
             }
             if (type == PageManager.BOLD && font.getName().toLowerCase().contains("bold") && checkFontCanDisplay(font, codepoint)) {
-                return font.deriveFont(Font.BOLD);
+                return font;
             }
         }
 
@@ -65,77 +64,6 @@ public class FontManager {
 
     public Font get(int index) {
         return (Font) fonts.toArray()[index];
-    }
-
-    /**初始化字体资源*/
-    public void initFontAssets() {
-        File fontDir = new File(System.getProperty("user.dir"), "fonts");
-
-        List<String> jarList = Arrays.asList(
-                "fonts/10_msyh.ttc",
-                "fonts/10_msyhbd.ttc",
-                "fonts/11_seguiemj.ttf",
-                "fonts/12_segmdl2.ttf",
-                "fonts/12_SegoeIcons.ttf",
-                "fonts/12_segoepr.ttf",
-                "fonts/12_segoeprb.ttf",
-                "fonts/12_segoesc.ttf",
-                "fonts/12_segoescb.ttf",
-                "fonts/12_segoeui.ttf",
-                "fonts/12_segoeuib.ttf",
-                "fonts/12_segoeuii.ttf",
-                "fonts/12_segoeuil.ttf",
-                "fonts/12_segoeuisl.ttf",
-                "fonts/12_segoeuiz.ttf",
-                "fonts/12_seguibl.ttf",
-                "fonts/12_seguibli.ttf",
-                "fonts/12_seguihis.ttf",
-                "fonts/12_seguili.ttf",
-                "fonts/12_seguisb.ttf",
-                "fonts/12_seguisbi.ttf",
-                "fonts/12_seguisli.ttf",
-                "fonts/12_seguisym.ttf",
-                "fonts/12_SegUIVar.ttf",
-                "fonts/13_MaterialSymbolsSharp-VariableFont_FILL,GRAD,opsz,wght.ttf"
-        );
-        for (String jarFile : jarList) {
-            File saveFile = new File(fontDir, jarFile.split("/")[1]);
-
-            try {
-                moveFileFromJar(jarFile, saveFile.getAbsolutePath());
-            } catch (IOException e) {
-                LOG.error(e);
-            }
-        }
-    }
-
-    public void moveFileFromJar(String jarInternalPath, String targetPath) throws IOException {
-        // 确保路径格式正确
-        String internalPath = jarInternalPath.startsWith("/") ? jarInternalPath : "/" + jarInternalPath;
-
-        try (InputStream inputStream = this.getClass().getResourceAsStream(internalPath)) {
-            if (inputStream == null) {
-                throw new IOException("文件未找到于Jar内: " + internalPath);
-            }
-
-            Path target = Paths.get(targetPath);
-
-            // 创建目标目录（如果不存在）
-            Files.createDirectories(target.getParent());
-
-            // 复制文件内容
-            try (OutputStream outputStream = Files.newOutputStream(target,
-                    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
-                byte[] buffer = new byte[8192];
-                int bytesRead;
-                while ((bytesRead = inputStream.read(buffer)) != -1) {
-                    outputStream.write(buffer, 0, bytesRead);
-                }
-            }
-        }
-
-        // 注意：无法从运行的Jar中删除源文件，这实际上是一个复制操作
-        // 如果需要真正移动（删除原文件），需要特殊处理Jar文件本身
     }
 
     /**

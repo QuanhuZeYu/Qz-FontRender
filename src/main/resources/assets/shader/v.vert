@@ -12,7 +12,6 @@ varying vec2 texCoord;
 varying vec4 Color;
 
 void main(void) {
-    // 逻辑保持不变
     gl_Position = projection * modelview * vec4(pos, 1.0);
     texCoord = tex;
     Color = color;
