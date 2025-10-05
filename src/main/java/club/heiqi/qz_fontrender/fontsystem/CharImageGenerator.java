@@ -21,7 +21,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 public class CharImageGenerator {
-    public FontManager fontManager = new FontManager(Config.awtCharSize * 0.8f);
+    public static CharImageGenerator instance;
+    public static CharImageGenerator getInstance() {
+        if (instance == null) {
+            instance = new CharImageGenerator();
+        }
+        return instance;
+    }
+    public FontManager fontManager = new FontManager((float) (Config.awtCharSize * 0.8f));
     /**任务列表 码点：对应回调*/
     public ConcurrentHashMap<Integer, Consumer<ImageAndInfo>> normalConsumerHashMap = new ConcurrentHashMap<>(),
             boldConsumerHashMap = new ConcurrentHashMap<>();
@@ -30,7 +37,7 @@ public class CharImageGenerator {
             boldResults = new ConcurrentHashMap<>();
 
     public void reload() {
-        fontManager.reload(Config.awtCharSize * 0.8f);
+        fontManager.reload((float) (Config.awtCharSize * 0.8f));
 
         normalConsumerHashMap.clear();
         boldConsumerHashMap.clear();

@@ -209,9 +209,9 @@ public class RenderTool {
         shaderManager.setUniformM4f("modelview", new Matrix4f(modelView));
         shaderManager.setUniformM4f("projection", new Matrix4f(projection));
 
-        shaderManager.setUniformF("sigma", Config.sigma);
-        shaderManager.setUniformF("blurRadius", Config.blurRadius);
+        shaderManager.setUniformF("sigma", (float) Config.sigma);
+        shaderManager.setUniformF("blurRadius", (float) Config.blurRadius);
         shaderManager.setUniformI("sampleRadius", Config.sampleRadius);
-        shaderManager.setUniformVec2("smoothRange", new Vector2f(Config.smoothRangeMin, Config.smoothRangeMax));
+        shaderManager.setUniformVec2("smoothRange", new Vector2f((float) Config.smoothRangeMin, (float) Config.smoothRangeMax));
     }
 }

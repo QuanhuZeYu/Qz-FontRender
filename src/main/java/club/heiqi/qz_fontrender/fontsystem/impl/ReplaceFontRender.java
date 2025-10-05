@@ -26,8 +26,15 @@ import java.util.List;
 
 public class ReplaceFontRender extends FontRenderer {
     public static ReplaceFontRender instance;
+    public static ReplaceFontRender getInstance() {
+        if (instance == null) {
+            Minecraft mc = Minecraft.getMinecraft();
+            instance = new ReplaceFontRender(mc.gameSettings, new ResourceLocation("textures/font/ascii.png"), mc.renderEngine, true);
+        }
+        return instance;
+    }
     public static final float DEFAULT_CHAR_WIDTH = 9f;
-    public float curCharSize;
+    public double curCharSize;
     public float saveR, saveG, saveB, saveA;
     public BatchRenderFont batchRenderer = new BatchRenderFont();
 
@@ -36,7 +43,6 @@ public class ReplaceFontRender extends FontRenderer {
         super(gameSettings, location, manager, b);
         curCharSize = Config.charSize;
         registerResourceManager();
-        instance = this;
     }
 
     public void registerResourceManager() {
@@ -46,6 +52,9 @@ public class ReplaceFontRender extends FontRenderer {
 
     @Override
     public void onResourceManagerReload(@Nullable IResourceManager p_110549_1_) {
+        reload();
+    }
+    public void reload() {
         PageManager.getInstance().reload((int) (Config.awtCharSize * 64), (int) Config.awtCharSize);
     }
 
@@ -393,7 +402,7 @@ public class ReplaceFontRender extends FontRenderer {
                 page = PageManager.getInstance().getPage(codepoint, fontType);
                 // 字符页正在生成返回空格
                 if (page == null) {
-                    width = Config.spaceWidth;
+                    width = (float) Config.spaceWidth;
                 } else {
                     // 获取字符的信息
                     CharInfo info = page.getCharInfo(codepoint);  // info不可为null
@@ -401,7 +410,7 @@ public class ReplaceFontRender extends FontRenderer {
                     // 处理随机化的情况
                     if (randomStyle) {
                         // 直接使用原始的字宽而不是随机的字宽
-                        width = ((info.advance / info.width) * this.curCharSize) + Config.characterSpacing;
+                        width = (float) (((info.advance / info.width) * this.curCharSize) + Config.characterSpacing);
                         float randomWidth = 0;
                         int randomCharCodepoint;
                         do {
@@ -419,12 +428,12 @@ public class ReplaceFontRender extends FontRenderer {
                         info = replacePage == null ? page.getCharInfo(codepoint) : replacePage.getCharInfo(randomCharCodepoint);
                     }
                     else {
-                        width = ((info.advance / info.width) * this.curCharSize) + Config.characterSpacing;
+                        width = (float) (((info.advance / info.width) * this.curCharSize) + Config.characterSpacing);
                     }
 
                     // TODO 实际渲染环节
                     // batchRenderer.collect(posX, posY, curCharWidth, curCharWidth, page, info, color, italicStyle);
-                    batchRenderer.collectRender(posX, posY, curCharSize, page, info, color, italicStyle);
+                    batchRenderer.collectRender(posX, posY, (float) curCharSize, page, info, color, italicStyle);
                 }
 
                 collectDraw(width, lineInfo);
@@ -543,9 +552,9 @@ public class ReplaceFontRender extends FontRenderer {
             GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
             GL11.glDisable(GL11.GL_LIGHTING);
             // GL11.glDisable(GL11.GL_ALPHA_TEST);
-            GL11.glDisable(GL11.GL_FOG);
+            // GL11.glDisable(GL11.GL_FOG);
             // GL11.glDisable(GL11.GL_DEPTH_TEST);
-            // GL11.glDisable(GL11.GL_CULL_FACE);
+            GL11.glDisable(GL11.GL_CULL_FACE);
             GL11.glEnable(GL11.GL_BLEND);
             GL11.glEnable(GL11.GL_TEXTURE_2D);
 
@@ -669,7 +678,7 @@ public class ReplaceFontRender extends FontRenderer {
         return builder.toString();
     }
 
-    public void setCharSize(float size) {
+    public void setCharSize(double size) {
         this.curCharSize = size;
         this.FONT_HEIGHT = (int) Math.ceil(curCharSize);
     }

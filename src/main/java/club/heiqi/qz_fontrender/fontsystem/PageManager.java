@@ -46,7 +46,7 @@ public class PageManager {
 
 
 
-        ((ClientProxy)MyMod.proxy).generator.reload();
+        CharImageGenerator.getInstance().reload();
 
         for (CharPage page : normalPage) {
             page.dispose();
@@ -176,7 +176,7 @@ public class PageManager {
                 }
             }
         };
-        ((ClientProxy)MyMod.proxy).generator.generateAsync(codepoint, NORMAL, charSize, consumer);
+        CharImageGenerator.getInstance().generateAsync(codepoint, NORMAL, charSize, consumer);
     }
 
     public void genDoneNormal(int codepoint, CharPage page) {
@@ -199,7 +199,7 @@ public class PageManager {
                 }
             }
         };
-        ((ClientProxy)MyMod.proxy).generator.generateAsync(codepoint, BOLD, charSize, consumer);
+        CharImageGenerator.getInstance().generateAsync(codepoint, BOLD, charSize, consumer);
     }
 
     public void genDoneBold(int codepoint, CharPage page) {

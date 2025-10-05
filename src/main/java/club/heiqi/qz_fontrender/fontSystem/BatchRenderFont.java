@@ -113,10 +113,10 @@ public class BatchRenderFont {
             float blue = (float) (inColor & 255) / 255;
 
             float[] vertex = new float[] {
-                    italic ? x+2 : x, y, Config.renderOffset,
-                    x, y+charSize, Config.renderOffset,
-                    x+charSize, y+charSize, Config.renderOffset,
-                    italic ? x+charSize+2 : x+charSize, y, Config.renderOffset
+                    italic ? x+2 : x, y, (float) Config.renderOffset,
+                    x, y+charSize, (float) Config.renderOffset,
+                    x+charSize, y+charSize, (float) Config.renderOffset,
+                    italic ? x+charSize+2 : x+charSize, y, (float) Config.renderOffset
             };
             float[] texCoord = new float[] {
                     u0, v0, u0, v1, u1, v1, u1, v0,
@@ -161,7 +161,7 @@ public class BatchRenderFont {
 
     public void flush() {
         RenderTool.getInstance().shaderManager.bind();
-        RenderTool.getInstance().shaderManager.setUniformVec2("textureSize", new Vector2f(Config.awtCharSize * 64));
+        RenderTool.getInstance().shaderManager.setUniformVec2("textureSize", new Vector2f((float) (Config.awtCharSize * 64)));
 
         for (Map.Entry<Integer, ArrayList<Runnable>> entry : callRenders.entrySet()) {
 

@@ -17,16 +17,12 @@ public class MixinMinecraft {
     )
     public void perTick(CallbackInfo callbackInfo) {
         Minecraft mc = ((Minecraft)((Object)this));
-        if (ReplaceFontRender.instance == null) {
-            new ReplaceFontRender(mc.gameSettings, mc.fontRenderer.locationFontTexture, mc.renderEngine, false);
-        }
-
         if (!(mc.fontRenderer instanceof ReplaceFontRender)) {
-            mc.fontRenderer = ReplaceFontRender.instance;
+            mc.fontRenderer = ReplaceFontRender.getInstance();
             System.out.println("Replace FontRenderer!");
         }
         if (!(mc.standardGalacticFontRenderer instanceof ReplaceFontRender)) {
-            mc.standardGalacticFontRenderer = ReplaceFontRender.instance;
+            mc.standardGalacticFontRenderer = ReplaceFontRender.getInstance();
             System.out.println("Replace FontRenderer!");
         }
     }
