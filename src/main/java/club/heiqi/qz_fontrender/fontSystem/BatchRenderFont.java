@@ -160,9 +160,8 @@ public class BatchRenderFont {
     }
 
     public void flush() {
-        RenderTool.getInstance().shaderManager.bind();
-        RenderTool.getInstance().shaderManager.setUniformVec2("textureSize", new Vector2f((float) (Config.awtCharSize * 64)));
-
+        RenderTool.getShaderManagerInstance().bind();
+        RenderTool.getInstance().setUniform_PipeLine0();
         for (Map.Entry<Integer, ArrayList<Runnable>> entry : callRenders.entrySet()) {
 
             GL11.glBindTexture(GL11.GL_TEXTURE_2D, entry.getKey());
@@ -191,7 +190,7 @@ public class BatchRenderFont {
         }
         callRenders.clear();
 
-        RenderTool.getInstance().shaderManager.unbind();
+        RenderTool.getShaderManagerInstance().unbind();
     }
 
     public void clean() {
