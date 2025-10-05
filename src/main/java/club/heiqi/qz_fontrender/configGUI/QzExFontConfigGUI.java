@@ -23,7 +23,6 @@ public class QzExFontConfigGUI extends BaseGUI {
     public QzExFontConfigGUI(GuiScreen parent) {
         super();
         this.parent = parent;
-        initGui();
     }
 
     public ListWidget createFontList() {
@@ -106,7 +105,7 @@ public class QzExFontConfigGUI extends BaseGUI {
 
     @Override
     public void initGui() {
-
+        super.initGui();
         // 重新设置根容器的内容，就像构造函数中做的那样
         this.root = new Widget().setSize(Display.getWidth(), Display.getHeight());
         root.setLayout(new VerticalLayout());
