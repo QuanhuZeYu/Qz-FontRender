@@ -2,7 +2,7 @@ dependencies {
     // 必须依赖
     implementation('org.joml:joml:1.10.8')
     implementation("com.google.guava:guava:33.4.8-jre")
-    implementation(files("libs/qz_uilib-dev.jar"))
+    implementation(files("libs/qz_uilib-1.1.1-2-0.7+cf9115dab1-dirty-dev.jar"))
 
     // 2025-10-2 更新依赖 统一到 整合包280版本中对应
     // GT5
