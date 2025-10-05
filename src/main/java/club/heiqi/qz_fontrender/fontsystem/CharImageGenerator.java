@@ -25,10 +25,11 @@ public class CharImageGenerator {
     public static CharImageGenerator getInstance() {
         if (instance == null) {
             instance = new CharImageGenerator();
+            fontManager = new FontManager((float) (Config.awtCharSize * 0.8f));
         }
         return instance;
     }
-    public FontManager fontManager = new FontManager((float) (Config.awtCharSize * 0.8f));
+    public static FontManager fontManager;
     /**任务列表 码点：对应回调*/
     public ConcurrentHashMap<Integer, Consumer<ImageAndInfo>> normalConsumerHashMap = new ConcurrentHashMap<>(),
             boldConsumerHashMap = new ConcurrentHashMap<>();
@@ -36,8 +37,10 @@ public class CharImageGenerator {
     public ConcurrentHashMap<Integer, ImageAndInfo> normalResults = new ConcurrentHashMap<>(),
             boldResults = new ConcurrentHashMap<>();
 
-    public void reload() {
-        fontManager.reload((float) (Config.awtCharSize * 0.8f));
+    public void reload(boolean reloadFontManager) {
+        if (reloadFontManager) {
+            fontManager.reload((float) (Config.awtCharSize * 0.8f));
+        }
 
         normalConsumerHashMap.clear();
         boldConsumerHashMap.clear();

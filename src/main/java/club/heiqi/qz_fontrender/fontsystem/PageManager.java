@@ -45,9 +45,6 @@ public class PageManager {
         this.charSize = charSize;
 
 
-
-        CharImageGenerator.getInstance().reload();
-
         for (CharPage page : normalPage) {
             page.dispose();
         }
