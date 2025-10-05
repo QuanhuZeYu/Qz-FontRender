@@ -19,17 +19,17 @@ public class Config {
     public static int sampleRadius;
 
 
-    public static float characterSpacing;
-    public static float spaceWidth;
-    public static float shadowOffsetX;
-    public static float shadowOffsetY;
-    public static float charSize;
-    public static float lineSpacing;
+    public static double characterSpacing;
+    public static double spaceWidth;
+    public static double shadowOffsetX;
+    public static double shadowOffsetY;
+    public static double charSize;
+    public static double lineSpacing;
 
-    public static float guiScale;
-    public static float sigma, blurRadius, smoothRangeMin, smoothRangeMax;
-    public static float awtCharSize;
-    public static float renderOffset;
+    public static double guiScale;
+    public static double sigma, blurRadius, smoothRangeMin, smoothRangeMax;
+    public static double awtCharSize;
+    public static double renderOffset;
 
     public void init(File configFile) {
         if (config == null) {
@@ -46,23 +46,27 @@ public class Config {
         sampleRadius = config.getInt("sampleRadius", Configuration.CATEGORY_GENERAL, 1, 0, Integer.MAX_VALUE, "高斯模糊采样半径");
 
 
-        guiScale = config.getFloat("guiScale", Configuration.CATEGORY_GENERAL, 3.0f, Float.MIN_VALUE, Float.MAX_VALUE, "界面缩放(注意！此值会覆盖原版设定值！)");
-        characterSpacing = config.getFloat("characterSpacing", Configuration.CATEGORY_GENERAL, 0.1f, Float.MIN_VALUE, Float.MAX_VALUE, "字间距");
-        spaceWidth = config.getFloat("spaceWidth", Configuration.CATEGORY_GENERAL, ReplaceFontRender.DEFAULT_CHAR_WIDTH/2f, Float.MIN_VALUE, Float.MAX_VALUE, "空格宽度");
-        shadowOffsetX = config.getFloat("shadowOffsetX", Configuration.CATEGORY_GENERAL, 0.3f, -Float.MAX_VALUE, Float.MAX_VALUE, "投影位置偏移X");
-        shadowOffsetY = config.getFloat("shadowOffsetY", Configuration.CATEGORY_GENERAL, 0.3f, -Float.MAX_VALUE, Float.MAX_VALUE, "投影位置偏移Y");
-        charSize = config.getFloat("charSize", Configuration.CATEGORY_GENERAL, 9f, -Float.MAX_VALUE, Float.MAX_VALUE, "字体大小");
-        lineSpacing = config.getFloat("lineSpacing", Configuration.CATEGORY_GENERAL, 1.0f, -Float.MAX_VALUE, Float.MAX_VALUE, "行间距");
-        sigma = config.getFloat("sigma", Configuration.CATEGORY_GENERAL, 2.0f, 0.0f, 64.0f, "高斯核标准差");
-        blurRadius = config.getFloat("blurRadius", Configuration.CATEGORY_GENERAL, 1f, 0.0f, 64.0f, "模糊程度");
-        smoothRangeMin = config.getFloat("smoothRangeMin", Configuration.CATEGORY_GENERAL, 0f, 0.0f, 1.0f, "平滑最小参数");
-        smoothRangeMax = config.getFloat("smoothRangeMax", Configuration.CATEGORY_GENERAL, 1f, 0.0f, 1.0f, "平滑最大参数");
-        awtCharSize = config.getFloat("awtCharSize", Configuration.CATEGORY_GENERAL, 64f, 0.0f, Float.MAX_VALUE, "awt字体分辨率");
-        renderOffset = config.getFloat("renderOffset", Configuration.CATEGORY_GENERAL, 0.1f, -Float.MAX_VALUE, Float.MAX_VALUE, "字符渲染偏移(前后偏移)");
+        guiScale = config.get(Configuration.CATEGORY_GENERAL, "guiScale", 3.0, "界面缩放(注意！此值会覆盖原版设定值！)", Double.MIN_VALUE, Double.MAX_VALUE).getDouble();
+        characterSpacing = config.get(Configuration.CATEGORY_GENERAL, "characterSpacing", 0.1, "字间距", Double.MIN_VALUE, Double.MAX_VALUE).getDouble();
+        spaceWidth = config.get(Configuration.CATEGORY_GENERAL, "spaceWidth", ReplaceFontRender.DEFAULT_CHAR_WIDTH/2.0, "空格宽度", Double.MIN_VALUE, Double.MAX_VALUE).getDouble();
+        shadowOffsetX = config.get(Configuration.CATEGORY_GENERAL, "shadowOffsetX", 0.3, "投影位置偏移X", -Double.MAX_VALUE, Double.MAX_VALUE).getDouble();
+        shadowOffsetY = config.get(Configuration.CATEGORY_GENERAL, "shadowOffsetY", 0.3, "投影位置偏移Y", -Double.MAX_VALUE, Double.MAX_VALUE).getDouble();
+        charSize = config.get(Configuration.CATEGORY_GENERAL, "charSize", 9.0, "字体大小", -Double.MAX_VALUE, Double.MAX_VALUE).getDouble();
+        lineSpacing = config.get(Configuration.CATEGORY_GENERAL, "lineSpacing", 1.0, "行间距", -Double.MAX_VALUE, Double.MAX_VALUE).getDouble();
+        sigma = config.get(Configuration.CATEGORY_GENERAL, "sigma", 2.0, "高斯核标准差", 0.0, 64.0).getDouble();
+        blurRadius = config.get(Configuration.CATEGORY_GENERAL, "blurRadius", 1.0, "模糊程度", 0.0, 64.0).getDouble();
+        smoothRangeMin = config.get(Configuration.CATEGORY_GENERAL, "smoothRangeMin", 0.0, "平滑最小参数", 0.0, 1.0).getDouble();
+        smoothRangeMax = config.get(Configuration.CATEGORY_GENERAL, "smoothRangeMax", 1.0, "平滑最大参数", 0.0, 1.0).getDouble();
+        awtCharSize = config.get(Configuration.CATEGORY_GENERAL, "awtCharSize", 64.0, "awt字体分辨率", 0.0, Double.MAX_VALUE).getDouble();
+        renderOffset = config.get(Configuration.CATEGORY_GENERAL, "renderOffset", 0.1, "字符渲染偏移(前后偏移)", -Double.MAX_VALUE, Double.MAX_VALUE).getDouble();
 
+        // 设置字体大小
+        ReplaceFontRender fontRender = ReplaceFontRender.getInstance();
+        if (fontRender != null) {
+            fontRender.setCharSize(charSize);
+        }
         if (config.hasChanged()) {
             config.save();
-            ReplaceFontRender.instance.setCharSize(charSize);
         }
     }
 

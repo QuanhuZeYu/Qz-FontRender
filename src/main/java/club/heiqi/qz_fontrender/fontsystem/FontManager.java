@@ -36,8 +36,12 @@ public class FontManager {
 
     public void reload(float fontSize) {
         this.fontSize = fontSize;
-        fonts.clear();
-        loadAssetsFontsTTF();
+        LinkedHashSet<Font> fontsLocal = new LinkedHashSet<>();
+        for (Font font : fonts) {
+            Font deriveFont = font.deriveFont(fontSize);
+            fontsLocal.add(deriveFont);
+        }
+        fonts = fontsLocal;
     }
 
     public Font findSuitable(int codepoint, int type) {

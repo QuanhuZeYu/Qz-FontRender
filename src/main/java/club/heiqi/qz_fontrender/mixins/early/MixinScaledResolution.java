@@ -36,7 +36,7 @@ public abstract class MixinScaledResolution {
         // guiScale值含义: 0=自动, 1=最小, 2=正常, 3=大, 4=最大
         float guiScale = Minecraft.getMinecraft().gameSettings.guiScale;
         if (Config.guiScaleFix) {
-            guiScale = Config.guiScale;
+            guiScale = (float) Config.guiScale;
         }
 
         // 处理自动缩放模式（guiScale = 0）
