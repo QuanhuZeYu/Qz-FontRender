@@ -4,6 +4,7 @@ import club.heiqi.qz_fontrender.Config;
 import club.heiqi.qz_fontrender.MyMod;
 import club.heiqi.qz_uilib.client.ConfigGuiTemplate;
 import club.heiqi.qz_uilib.widget.ButtonWithTextWidget;
+import club.heiqi.qz_uilib.widget.layout.VerticalLayout;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraftforge.common.config.ConfigCategory;
@@ -17,21 +18,28 @@ public class QzConfigGUI extends ConfigGuiTemplate {
     public QzConfigGUI(GuiScreen parent) {
         super(parent);
 
+        // 该部分将添加到GUI模板类中此处不再重复
+        // ButtonWithTextWidget quitButton = new ButtonWithTextWidget().setText("取消&退出");
+        // quitButton.perfectWidth = -1;
+        // quitButton.setCallBack(() -> {
+        //     saveOperators.clear();
+        //     if (parent != null)
+        //         Minecraft.getMinecraft().displayGuiScreen(parent);
+        // });
+        // root.addChild(quitButton);
+    }
+
+    @Override
+    public void initGui() {
+        super.initGui();
+        root.setLayout(new VerticalLayout());
+
         ButtonWithTextWidget exSettingButton = new ButtonWithTextWidget().setText("字体排序设置");
         exSettingButton.perfectWidth = -1;
         exSettingButton.setCallBack(() -> {
             Minecraft.getMinecraft().displayGuiScreen(new QzExFontConfigGUI(this));
         });
         root.addChild(root.children.size()-1, exSettingButton);
-
-        ButtonWithTextWidget quitButton = new ButtonWithTextWidget().setText("取消&退出");
-        quitButton.perfectWidth = -1;
-        quitButton.setCallBack(() -> {
-            saveOperators.clear();
-            if (parent != null)
-                Minecraft.getMinecraft().displayGuiScreen(parent);
-        });
-        root.addChild(quitButton);
     }
 
     @Override
