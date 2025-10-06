@@ -62,7 +62,7 @@ public class Config {
         awtCharSize = config.get(Configuration.CATEGORY_GENERAL, "awtCharSize", 64.0, "awt字体分辨率", 0.0, Double.MAX_VALUE).getDouble();
         renderOffset = config.get(Configuration.CATEGORY_GENERAL, "renderOffset", 0.1, "字符渲染偏移(前后偏移)", -Double.MAX_VALUE, Double.MAX_VALUE).getDouble();
 
-        fontSort = config.get(Configuration.CATEGORY_GENERAL, "fontSort", fontSort).getStringList();
+        fontSort = config.get(Configuration.CATEGORY_GENERAL, "fontSort", fontSort, "字体排序回滚列表-在GUI配置中可自动生成").getStringList();
 
         // 设置字体大小
         ReplaceFontRender fontRender = ReplaceFontRender.getInstance();
