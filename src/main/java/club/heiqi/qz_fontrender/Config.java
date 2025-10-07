@@ -27,7 +27,7 @@ public class Config {
     public static double lineSpacing;
 
     public static double guiScale;
-    public static double sigma, blurRadius, smoothRangeMin, smoothRangeMax;
+    public static double sigma, blurRadius, smoothRangeMin, smoothRangeMax, colorGain;
     public static double awtCharSize;
     public static double renderOffset;
 
@@ -45,7 +45,7 @@ public class Config {
         guiScaleFix = config.getBoolean("guiScaleFix", Configuration.CATEGORY_GENERAL, false, "GUI缩放修复");
 
 
-        sampleRadius = config.getInt("sampleRadius", Configuration.CATEGORY_GENERAL, 1, 0, Integer.MAX_VALUE, "高斯模糊采样半径");
+        sampleRadius = config.getInt("sampleRadius", Configuration.CATEGORY_GENERAL, 1, 0, 3, "高斯模糊采样半径");
 
 
         guiScale = config.get(Configuration.CATEGORY_GENERAL, "guiScale", 3.0, "界面缩放(注意！此值会覆盖原版设定值！)", Double.MIN_VALUE, Double.MAX_VALUE).getDouble();
@@ -59,6 +59,7 @@ public class Config {
         blurRadius = config.get(Configuration.CATEGORY_GENERAL, "blurRadius", 1.0, "模糊程度", 0.0, 64.0).getDouble();
         smoothRangeMin = config.get(Configuration.CATEGORY_GENERAL, "smoothRangeMin", 0.0, "平滑最小参数", 0.0, 1.0).getDouble();
         smoothRangeMax = config.get(Configuration.CATEGORY_GENERAL, "smoothRangeMax", 1.0, "平滑最大参数", 0.0, 1.0).getDouble();
+        colorGain = config.get(Configuration.CATEGORY_GENERAL, "colorGain", 0.0, "字体渲染亮度增益", -1.0, 1.0).getDouble();
         awtCharSize = config.get(Configuration.CATEGORY_GENERAL, "awtCharSize", 64.0, "awt字体分辨率", 0.0, Double.MAX_VALUE).getDouble();
         renderOffset = config.get(Configuration.CATEGORY_GENERAL, "renderOffset", 0.1, "字符渲染偏移(前后偏移)", -Double.MAX_VALUE, Double.MAX_VALUE).getDouble();
 

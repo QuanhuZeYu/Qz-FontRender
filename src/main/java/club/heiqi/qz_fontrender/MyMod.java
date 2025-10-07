@@ -15,7 +15,8 @@ import cpw.mods.fml.common.event.FMLServerStartingEvent;
         version = Tags.VERSION,
         name = MyMod.MOD_NAME,
         acceptedMinecraftVersions = "[1.7.10]",
-        guiFactory = "club.heiqi.qz_fontrender.configGUI.ConfigGUIFactory")
+        guiFactory = "club.heiqi.qz_fontrender.configGUI.ConfigGUIFactory",
+        dependencies = "required:qz_uilib@[0.0.0,);")
 public class MyMod {
 
     public static final String MODID = "qz_fontrender";
