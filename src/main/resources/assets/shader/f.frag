@@ -22,7 +22,6 @@ vec4 safeSampler(sampler2D tex, vec2 uv) {
     if (uv.x < uvBounds.x || uv.x > uvBounds.z || uv.y < uvBounds.y || uv.y > uvBounds.w) {
         return vec4(0.0);
     }
-    // 纹理采样函数必须使用 texture2D
     return texture2D(tex, uv);
 }
 
@@ -73,5 +72,5 @@ void main() {
 
     sampleColor.a = smoothstep(smoothRange.x, smoothRange.y, sampleColor.a);
 
-    gl_FragColor = vec4((sampleColor.rgb * Color.rgb) + colorGain, sampleColor.a);
+    gl_FragColor = vec4((sampleColor.rgb * Color.rgb) + vec3(colorGain), sampleColor.a);
 }
