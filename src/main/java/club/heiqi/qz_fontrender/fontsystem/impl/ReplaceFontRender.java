@@ -457,7 +457,7 @@ public class ReplaceFontRender extends FontRenderer {
 
         public void draw() {
             GL11.glColor4f(lineColor.x, lineColor.y, lineColor.z, lineColor.w);
-            GL11.glDisable(GL11.GL_TEXTURE_2D);
+            // GL11.glDisable(GL11.GL_TEXTURE_2D);
             GL11.glBegin(GL11.GL_QUADS);
 
             for (Vector3d vertex : lineVertex) {
@@ -475,17 +475,17 @@ public class ReplaceFontRender extends FontRenderer {
     public ArrayList<LineInfo> lineInfos = new ArrayList<>();
     private void collectDraw(float width, LineInfo lineInfo) {
         if (this.underlineStyle) {
-            lineInfo.addVertex(new Vector3d((this.posX), (this.posY + this.curCharSize), 0.0d))
-                    .addVertex(new Vector3d((this.posX + width), (this.posY + this.curCharSize), 0.0d))
+            lineInfo.addVertex(new Vector3d((this.posX + width), (this.posY + this.curCharSize), 0.0d))
                     .addVertex(new Vector3d((this.posX + width), (this.posY + this.curCharSize - 1.0d), 0.0d))
-                    .addVertex(new Vector3d((this.posX), (this.posY + this.curCharSize - 1.0d), 0.0d));
+                    .addVertex(new Vector3d((this.posX), (this.posY + this.curCharSize - 1.0d), 0.0d))
+                    .addVertex(new Vector3d((this.posX), (this.posY + this.curCharSize), 0.0d));
             lineInfos.add(lineInfo);
         }
         if (this.strikethroughStyle) {
-            lineInfo.addVertex(new Vector3d((this.posX), this.posY + (this.curCharSize / 2) - 0.5, 0.0d))
+            lineInfo.addVertex(new Vector3d((this.posX + width), this.posY + (this.curCharSize / 2) + 0.5, 0.0d))
                     .addVertex(new Vector3d((this.posX + width), this.posY + (this.curCharSize / 2) - 0.5, 0.0d))
-                    .addVertex(new Vector3d(new Vector3d((this.posX + width), this.posY + (this.curCharSize / 2) + 0.5, 0.0d)))
-                    .addVertex(new Vector3d(new Vector3d((this.posX), this.posY + (this.curCharSize / 2) + 0.5, 0.0d)));
+                    .addVertex(new Vector3d((this.posX), this.posY + (this.curCharSize / 2) - 0.5, 0.0d))
+                    .addVertex(new Vector3d((this.posX), this.posY + (this.curCharSize / 2) + 0.5, 0.0d));
             lineInfos.add(lineInfo);
         }
 
@@ -550,23 +550,23 @@ public class ReplaceFontRender extends FontRenderer {
             this.posX = fx;
             this.posY = fy;
 
-            GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
-            GL11.glDisable(GL11.GL_LIGHTING);
+            // GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
+            // GL11.glDisable(GL11.GL_LIGHTING);
             // GL11.glDisable(GL11.GL_ALPHA_TEST);
             // GL11.glDisable(GL11.GL_FOG);
             // GL11.glDisable(GL11.GL_DEPTH_TEST);
-            GL11.glDisable(GL11.GL_CULL_FACE);
+            // GL11.glDisable(GL11.GL_CULL_FACE);
             GL11.glEnable(GL11.GL_BLEND);
             GL11.glEnable(GL11.GL_TEXTURE_2D);
 
             // 🐕 收集需要渲染的字符 🐱
             this.renderStringAtPos_Version2(text, shadow);
             batchRenderer.flush();
-
+            GL11.glDisable(GL11.GL_TEXTURE_2D);
             drawCollect();
 
-            GL11.glDisable(GL11.GL_POLYGON_OFFSET_FILL);
-            GL11.glPopAttrib();
+            // GL11.glDisable(GL11.GL_POLYGON_OFFSET_FILL);
+            GL11.glEnable(GL11.GL_TEXTURE_2D);
 
             return (int)Math.ceil(this.posX);
         }
