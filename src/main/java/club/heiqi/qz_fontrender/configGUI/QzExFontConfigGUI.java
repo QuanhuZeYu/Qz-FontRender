@@ -4,7 +4,7 @@ import club.heiqi.qz_fontrender.Config;
 import club.heiqi.qz_fontrender.fontsystem.CharImageGenerator;
 import club.heiqi.qz_fontrender.fontsystem.FontManager;
 import club.heiqi.qz_fontrender.fontsystem.impl.ReplaceFontRender;
-import club.heiqi.qz_uilib.client.BaseGUI;
+import club.heiqi.qz_uilib.gui.BaseGUI;
 import club.heiqi.qz_uilib.widget.*;
 import club.heiqi.qz_uilib.widget.layout.HorizontalLayout;
 import club.heiqi.qz_uilib.widget.layout.VerticalLayout;

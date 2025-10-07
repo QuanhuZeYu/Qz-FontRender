@@ -11,6 +11,7 @@ uniform vec2 smoothRange = vec2(0.0, 1.0);
 uniform float sigma = 3.14;
 uniform float blurRadius = 1.0;
 uniform int sampleRadius = 1;
+uniform float colorGain = 0.0;
 
 const float PI = 3.14159265359;
 
@@ -72,5 +73,5 @@ void main() {
 
     sampleColor.a = smoothstep(smoothRange.x, smoothRange.y, sampleColor.a);
 
-    gl_FragColor = vec4(sampleColor.rgb * Color.rgb, sampleColor.a);
+    gl_FragColor = vec4((sampleColor.rgb * Color.rgb) + colorGain, sampleColor.a);
 }
